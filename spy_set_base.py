@@ -17,6 +17,7 @@ import cgi
 import re
 import logging
 from spy_bd_general import BD
+from spy import Config
 
 # Creo un logger local child.
 LOG = logging.getLogger(__name__)
@@ -194,7 +195,7 @@ class Confbase:
         de c/datalogger
         Preparo un dict donde paso todos los parametros a actualizar.
         '''
-        bd = BD()
+        bd = BD( Config['MODO']['modo'] )
         d = dict()  
         try:
             d['IPADDRESS'] = cgi.escape(os.environ["REMOTE_ADDR"])

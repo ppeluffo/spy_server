@@ -58,11 +58,15 @@ def process_file(file):
     Recibo el nombre de un archivo el cual abro y voy leyendo c/linea
     y procesandola
     Al final lo muevo al directorio de backups
+    c/archivo puede corresponder a un datalogger distinto por lo tanto el datasource puede ser
+    distinto.
+    Debo entonces resetear el datasource antes de procesar c/archivo
     '''
     dirname, filename = os.path.split(file)
     LOG.info('process_: file: %s' % filename)
     dlgid, *res = re.split('_', filename)
     #LOG.info('process_: dlgid: %s' % dlgid)
+    bd.reset_datasource(dlgid)
     with open(file) as myfile:
         line = myfile.readline()
         process_line(dlgid, line)

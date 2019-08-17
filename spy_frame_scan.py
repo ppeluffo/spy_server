@@ -42,7 +42,8 @@ Host: www.spymovil.com
 
 import cgi
 import logging
-from spy_bd_general import BD
+from spy_bd_bdspy import BDSPY
+from spy import Config
 
 # Creo un logger local child.
 LOG = logging.getLogger(__name__)
@@ -73,7 +74,7 @@ class SCAN_frame:
         - Si no esta el dlgid ni el uid, ERROR
         '''
         
-        bd = BD()
+        bd = BDSPY( Config['MODO']['modo'] )
         # Primero vemos que el dlgid este definido sin importar su uid
         if bd.dlgIsDefined( self.dlgid ): 
             LOG.info('[%s] Scan OK !'% ( self.dlgid) )

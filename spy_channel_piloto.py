@@ -8,7 +8,8 @@ Created on Wed Jul 31 21:50:46 2019
 
 import cgi
 import re
-from spy_bd_general import BD
+from spy_bd_gda import BDGDA
+from spy import Config
 import logging
 # Creo un logger local child.
 LOG = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ class Piloto:
         '''
         Leo la configuracion de pilotos del dlgid y relleno la estructura self.
         '''
-        bd = BD()
+        bd = BDGDA( Config['MODO']['modo'] )
          # Leo la configuracion en un dict.
         d = bd.read_conf_piloto(dlgid)
         # Controlo que hallan datos.

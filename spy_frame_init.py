@@ -17,6 +17,7 @@ from spy_set_analog import Confanalog
 from spy_set_digital import Confdigital
 from spy_set_counter import Confcounter
 from spy_set_doutput import Confdoutput
+from spy import Config
 
 import logging
 # Creo un logger local child.
@@ -28,13 +29,14 @@ class INIT_frame:
    
     
     def __init__(self):
-        # Inicializo guardando el query string y lo parseo
-        # Todas las respuestas llevan el clock para resincronizar al datalogger.
+        '''
+        Inicializo guardando el query string y lo parseo
+        Todas las respuestas llevan el clock para resincronizar al datalogger.
+        '''
         now = datetime.now()
         self.response = now.strftime('INIT_OK:CLOCK=%y%m%d%H%M:')
-        
         form = cgi.FieldStorage()
-        self.dlgid = form.getfirst('DLGID', 'DLG_ERR')    
+        self.dlgid = form.getfirst('DLGID', 'DLG_ERR')
         return
  
     
@@ -47,9 +49,9 @@ class INIT_frame:
          
     def process_frame(self):
         LOG.info('PV_process_frame')
-        bd = BD()    
         # Leo toda la configuracion desde la BD en un dict.
-        dcnf = bd.read_dlg_conf_from_bd( self.dlgid)
+        bd = BD( Config['MODO']['modo'] )
+        dcnf = bd.read_dlg_conf( self.dlgid)
         if dcnf == {}:
             LOG.info('[%s] ERROR: No hay datos en la BD' % self.dlgid )
             self.response = 'ERROR'
@@ -90,7 +92,7 @@ class INIT_frame:
             self.response += self.confbase_bd.get_response_string( self.confbase_dlg )
             LOG.info('[%s] RSP=[%s]' % ( self.dlgid, self.response))
         # Actualizo la BD con datos de init ( ipaddress, imei, uid ....) que trae el datalogger
-        self.confbase_dlg.update_bd()    
+        self.confbase_dlg.update_bd()
         return
     
     

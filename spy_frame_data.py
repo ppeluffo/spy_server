@@ -29,7 +29,8 @@ LOG = logging.getLogger(__name__)
 #------------------------------------------------------------------------------
 
 class DATA_frame:
-   
+
+
     def __init__(self):
         form = cgi.FieldStorage()
         self.dlgid = form.getfirst('DLGID', 'DLG_ERR')
@@ -40,7 +41,8 @@ class DATA_frame:
         self.control_codes = form.getlist('CTL')
         self.response = 'RX_OK:'
         return
-    
+
+
     def sendResponse(self):
         #response = 'SCAN line: [dlgid=%s, uid=%s]' % (self.dlgid, self.uid )
         LOG.info('[%s] RSP=%s' % ( self.dlgid, self.response))
@@ -48,13 +50,14 @@ class DATA_frame:
         print('<html><body><h1>%s</h1></body></html>' % (self.response))
         return
 
+
     def processCommitedConf(self):
         '''
         Leo de la BD el commited_conf. Si esta en 1 lo pongo en 0
         Si en la respuesta no hay un reset ( puesto por la REDIS ) y el
         commited_conf fue 1, pongo un RESET.
         '''
-        bd = BD()
+        bd = BD( Config['MODO']['modo'] )
         commited_conf = bd.process_commited_conf(self.dlgid)
         if ( (commited_conf == 1) and ( 'RESET' not in self.response) ):
             self.response += 'RESET:'

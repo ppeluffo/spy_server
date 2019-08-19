@@ -106,12 +106,28 @@ class Redis():
                 # Para usarlo en comparaciones con strings debo convertirlos a str con decode()
                 reset = r.decode()
                 # Ahora reset es un str NO un booleano por lo tanto comparo contra 'True'
-                if reset == 'True':
+                if reset.upper() == 'TRUE':
                     response += 'RESET:'
                 
-                self.rh.hset( self.dlgid, 'RESET', 'False' )        
+                self.rh.hset( self.dlgid, 'RESET', 'FALSE' )
         else:
              LOG.info('[%s] Redis not-connected (get_cmd_reset) !!' % self.dlgid)    
         
         return(response)
         
+
+if __name__ == '__main__':
+    print('Testing Redis module')
+    rd = Redis('PRUEBA')
+    rd.create_rcd()
+    reset = rd.rh.hget('PRUEBA','RESET')
+    print('Reset INIT=%s' % reset)
+
+    rd.rh.hset('PRUEBA', 'RESET', 'False')
+    reset = rd.rh.hget('PRUEBA','RESET')
+    print('Reset Rd=%s' % reset)
+
+
+    response = rd.get_cmd_reset()
+    print ('RSP=%s' % response)
+

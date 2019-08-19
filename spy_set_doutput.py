@@ -37,7 +37,7 @@ class Confdoutput:
         Si el modo es CONS, entonces viene otra parametro que es CONS
         '''
         form = cgi.FieldStorage()
-        self.douts = form.getfirst('DOUTS','')  
+        self.douts = form.getfirst('DOUTS','None')
         if self.douts == 'CONS':
             try:
                 self.consigna_dia_hhmm, self.consigna_noche_hhmm = re.split('=|,', form.getvalue('CONS'))   
@@ -59,7 +59,7 @@ class Confdoutput:
         Leo la configuracion base del dlgid desde la base de datos y relleno la estructura self.
         La base de datos ya esta leida y los valores pasados en el dcnf.
         '''
-        self.douts = dcnf.get(('DOUTPUTS','MODO'))
+        self.douts = dcnf.get(('DOUTPUTS','MODO'), 'None')
         if self.douts == 'CONS':
             self.consigna_dia_hhmm = int(dcnf.get(('CONS','HHMM1'),0))
             self.consigna_noche_hhmm = int(dcnf.get(('CONS','HHMM2'),0))

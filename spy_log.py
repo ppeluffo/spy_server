@@ -15,7 +15,7 @@ def config_logger():
     logging.basicConfig(level=logging.DEBUG)
 
     # formatter = logging.Formatter('SPX %(asctime)s  [%(levelname)s] [%(name)s] %(message)s', datefmt='%Y-%m-%d %T')
-    formatter = logging.Formatter('SPX [%(levelname)s] [%(name)s] %(message)s')
+    formatter = logging.Formatter('SPY [%(levelname)s] [%(name)s] %(message)s')
     handler = logging.handlers.SysLogHandler('/dev/log')
     handler.setFormatter(formatter)
     # Creo un logger derivado del root para usarlo en los modulos

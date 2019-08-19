@@ -23,7 +23,7 @@ class CounterChannel():
         self.magpp = 0
         self.pwidth = 0
         self.period = 0
-        self.speed = 0
+        self.speed = ''
         
     def init_from_qs ( self, ch_id ):
         '''
@@ -36,11 +36,10 @@ class CounterChannel():
         field = form.getfirst(ch_id,'X,0,0,0,LS')    # Los canales que no estan los asumo apagados 'X'
         if field is not None:
             try:
-                self.name, self.magpp, self.pwidth, self.period, self.speed = re.split('=|,', field ) 
+                self.name, self.magpp, self.pwidth, self.period, self.speed, *r = re.split('=|,', field )
                 self.magpp = float(self.magpp)
-                self.pwidth = float(self.pwidth)
-                self.period = float(self.period)
-                self.speed = int(self.speed)
+                self.pwidth = int(self.pwidth)
+                self.period = int(self.period)
             except:
                 LOG.info('[%s] ERROR: %s_unpack [%s]' % ( self.dlgid, ch_id, field ))
         return
@@ -57,13 +56,9 @@ class CounterChannel():
         CH = self.id
         self.name = dcnf.get((CH,'NAME'),'X')
         self.magpp = float(dcnf.get((CH,'MAGPP'),0))
-        self.pwidth = float(dcnf.get((CH,'PWIDTH'),0))
-        self.period = float(dcnf.get(( CH,'PERIOD'),0))
+        self.pwidth = int(dcnf.get((CH,'PWIDTH'),0))
+        self.period = int(dcnf.get(( CH,'PERIOD'),0))
         self.speed = dcnf.get((CH,'SPEED'),'LS')
-        if (self.speed) == 'LS':
-            self.speed = 0
-        else:
-            self.speed = 1
         return
     
     def __eq__(self, other ):
@@ -90,7 +85,6 @@ class CounterChannel():
         '''
         # Para los casos en que no estan definidos los canales
         if ( self.name == other.name == 'X' ):
-            LOG.info('[%s] DEBUG A ' % self.name )           
             return False
 
         # Para el caso general
@@ -99,7 +93,6 @@ class CounterChannel():
             self.pwidth != other.pwidth or
             self.period != other.period or
             self.speed != other.speed ):
-            LOG.info('[%s] DEBUG B' % self.name)
             return True
         else:
             return False

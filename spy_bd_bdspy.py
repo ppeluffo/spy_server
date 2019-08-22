@@ -9,10 +9,7 @@ Luego, c/metodo me da los parametros que quiera
 from sqlalchemy import create_engine
 from sqlalchemy import text
 from spy import Config
-import logging
-
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 # ------------------------------------------------------------------------------
 class BDSPY:
@@ -44,24 +41,26 @@ class BDSPY:
 
         try:
             self.engine = create_engine(self.url)
-        except:
+        except Exception as err_var:
             self.connected = False
-            LOG.info('ERROR: BDSPY engine NOT created')
+            log(module=__name__, function='connect', msg='ERROR: BDSPY engine NOT created. ABORT !!')
+            log(module=__name__, function='connect', msg='EXCEPTION {}'.format(err_var))
             exit(1)
 
         try:
             self.conn = self.engine.connect()
             self.connected = True
             return (True)
-        except:
+        except Exception as err_var:
             self.connected = False
-            LOG.info('ERROR: BDSPY NOT connected')
+            log(module=__name__, function='connect', msg='ERROR: BDSPY NOT connected. ABORT !!')
+            log(module=__name__, function='connect', msg='EXCEPTION {}'.format(err_var))
             exit(1)
 
         return (False)
 
 
-    def dlgIsDefined(self, dlgid):
+    def dlg_is_defined(self, dlgid):
         """
         Retorna True/False dependiendo si se encontrol el dlgid definido en BDSPY
         BDSPY es la madre de todas las BD ya que es la que indica en que BD tiene
@@ -69,15 +68,16 @@ class BDSPY:
         """
 
         if self.connect() == False:
-            LOG.info('[{0}] ERROR: dlgIsDefined cant connect bdspy.'.format(dlgid))
+            log(module=__name__, function='dlg_is_defined', dlgid=dlgid, msg='ERROR: can\'t connect bdspy !!')
             return False
 
         # Vemos si el dlg esta definido en la BDSPY
         query = text("SELECT id FROM spy_equipo WHERE dlgid = '%s'" % (dlgid))
         try:
             rp = self.conn.execute(query)
-        except:
-            LOG.info('[{0}] ERROR: dlgIsDefined exec error.'.format(dlgid))
+        except Exception as err_var:
+            log(module=__name__, function='dlg_is_defined', dlgid=dlgid, msg='ERROR: can\'t exec bdspy !!')
+            log(module=__name__, function='dlg_is_defined', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
             return (False)
 
         row = rp.first()
@@ -85,10 +85,9 @@ class BDSPY:
             return False
         else:
             return True
-        return False
 
 
-    def uidIsDefined(self, uid):
+    def uid_is_defined(self, uid):
         """
         Retorna True/False si el uid esta definido en la BDSPY.
         Cuando no encontramos una entrada por dlgid, buscamos por uid y esta es
@@ -96,15 +95,16 @@ class BDSPY:
         En este caso guardamos el dlgid en el self para luego ser consultado.
         """
         if self.connect() == False:
-            LOG.info('[{0}] ERROR: uidIsDefined cant connect bdspy.'.format(uid))
+            log(module=__name__, function='uid_is_defined', msg='ERROR: can\'t connect bdspy !!')
             return False
 
         query = text("SELECT dlgid FROM spy_equipo WHERE uid = '%s'" % (uid))
         try:
             rp = self.conn.execute(query)
-        except:
-            LOG.info('[{0}] ERROR: uidIsDefined exec error.'.format(uid))
-            return (False)
+        except Exception as err_var:
+            log(module=__name__, function='uid_is_defined', msg='ERROR: can\'t exec bdspy !!')
+            log(module=__name__, function='uid_is_defined', msg='EXCEPTION {}'.format(err_var))
+            return False
 
         row = rp.first()
         if row is None:
@@ -112,20 +112,19 @@ class BDSPY:
         else:
             return True
 
-        return False
-
 
     def get_dlgid_from_uid(self, uid):
 
         if self.connect() == False:
-            LOG.info('[{0}] ERROR: get_dlgid_from_uid cant connect bdspy.'.format(uid))
+            log(module=__name__, function='get_dlgid_from_uid', msg='ERROR: can\'t connect bdspy !!')
             return False
 
         query = text("SELECT dlgid FROM spy_equipo WHERE uid = '%s'" % (uid))
         try:
             rp = self.conn.execute(query)
-        except:
-            LOG.info('[{0}] ERROR: get_dlgid_from_uid exec error.'.format(uid))
+        except Exception as err_var:
+            log(module=__name__, function='get_dlgid_from_uid', msg='ERROR: can\'t exec bdspy !!')
+            log(module=__name__, function='get_dlgid_from_uid', msg='EXCEPTION {}'.format(err_var))
             return ('')
 
         row = rp.first()
@@ -133,7 +132,7 @@ class BDSPY:
         return self.dlgid
 
 
-    def findDataSource(self, dlgid):
+    def find_data_source(self, dlgid):
         """
         Determina en que base de datos (GDA/TAHONA/bd_ose) esta definido el dlg
         Retorna True/False
@@ -148,28 +147,28 @@ class BDSPY:
             return self.datasource
 
         if not self.connect():
-            LOG.info('[{0}] ERROR: findDataSource cant connect bdspy.'.format(dlgid))
+            log(module=__name__, function='find_data_source', dlgid=dlgid, msg='ERROR: can\'t connect bdspy !!')
             return
 
         query = text("SELECT datasource FROM spy_equipo WHERE dlgid = '%s'" % (dlgid))
         try:
             rp = self.conn.execute(query)
-        except:
-            LOG.info('[{0}] ERROR: findDataSource  exec error.'.format(dlgid))
+        except Exception as err_var:
+            log(module=__name__, function='find_data_source', dlgid=dlgid, msg='ERROR: can\'t exec bdspy !!')
+            log(module=__name__, function='find_data_source', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
             return
 
         results = rp.fetchone()
         if results == None:
-            LOG.info('[{0}] ERROR: findDataSource  return None.'.format(dlgid))
+            log(module=__name__, function='find_data_source', dlgid=dlgid, msg='ERROR: DS=None')
             return
 
         self.datasource = results[0]
-        LOG.info('[{0}] findDataSource DS={1}'.format(dlgid, self.datasource))
+        log(module=__name__, function='find_data_source', dlgid=dlgid, msg='DS={}'.format(self.datasource))
 
         return self.datasource
 
 
     def reset_datasource(self, dlgid):
         self.datasource = ''
-        LOG.info('[{0}] reset_dataSource'.format(dlgid))
-
+        log(module=__name__, function='reset_datasource', level='SELECT', dlgid=dlgid, msg='start')

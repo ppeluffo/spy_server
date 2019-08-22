@@ -7,9 +7,7 @@ Created on Thu Aug  8 08:04:51 2019
 """
 import logging
 from spy_channel_digital import DigitalChannel
-
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 #------------------------------------------------------------------------------
 
@@ -118,6 +116,6 @@ class Confdigital:
         if self.D7 != other.D7:
             response += self.D7.get_response_string()
             
-        LOG.info('[%s] confdigital_RSP: [%s]' % ( self.dlgid,response))
+        log(module=__name__, function='get_response_string', level='SELECT', dlgid=self.dlgid, msg='confbase_RSP: {}'.format(response))
         return(response)      
 

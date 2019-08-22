@@ -9,9 +9,7 @@ Created on Thu Aug  8 08:05:36 2019
 import cgi
 import logging
 import re
-
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 #------------------------------------------------------------------------------
 class DigitalChannel():
@@ -36,13 +34,14 @@ class DigitalChannel():
             try:
                 self.name, self.tpoll = re.split('=|,', field ) 
                 self.tpoll = int(self.tpoll)
-            except:
-                LOG.info('[%s] ERROR: %s_unpack [%s]' % ( self.dlgid, ch_id, field ))
+            except Exception as err_var:
+                log(module=__name__, function='init_from_qs', level='INFO', dlgid=self.dlgid, msg='ERROR: {0}_unpack {1}'.format(ch_id, field))
+                log(module=__name__, function='init_from_qs', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
         return
 
     
     def log ( self, tag = ''):
-        LOG.info('[%s] %s id=%s: name=%s tpoll=%s' % ( self.dlgid, tag, self.id, self.name, self.tpoll ))
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} id={1}: name={2} tpoll={3}'.format(tag, self.id, self.name, self.tpoll))
         return
     
     def init_from_bd( self, dcnf):

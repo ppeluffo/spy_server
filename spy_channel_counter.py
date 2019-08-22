@@ -8,10 +8,7 @@ Created on Thu Aug  8 08:21:54 2019
 
 import cgi
 import re
-import logging
-
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 #------------------------------------------------------------------------------
 class CounterChannel():
@@ -40,13 +37,14 @@ class CounterChannel():
                 self.magpp = float(self.magpp)
                 self.pwidth = int(self.pwidth)
                 self.period = int(self.period)
-            except:
-                LOG.info('[%s] ERROR: %s_unpack [%s]' % ( self.dlgid, ch_id, field ))
+            except Exception as err_var:
+                log(module=__name__, function='init_from_qs', level='INFO', dlgid=self.dlgid, msg='ERROR: {0}_unpack {1}'.format(ch_id, field))
+                log(module=__name__, function='init_from_qs', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
         return
  
         
     def log ( self, tag = ''):
-        LOG.info('[%s] %s id=%s: name=%s, magpp=%s, pwidth=%s, period=%s, speed=%s' % ( self.dlgid, tag, self.id, self.name, self.magpp, self.pwidth, self.period, self.speed ))
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} id={1}: name={2}, magpp={3}, pwidth={4}, period={5}, speed={6}'.format(tag,self.id, self.name, self.magpp, self.pwidth, self.period, self.speed))
         return
     
     def init_from_bd( self, dcnf):

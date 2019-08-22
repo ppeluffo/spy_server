@@ -11,9 +11,7 @@ pip3 install redis
 """
 
 import redis
-import logging
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 #------------------------------------------------------------------------------
 
@@ -30,24 +28,32 @@ class Redis():
         try:
             self.rh = redis.Redis()
             self.connected = True
-        except:
-            LOG.info('[%s] Redis init ERROR !!' % self.dlgid )
+        except Exception as err_var:
+            log(module=__name__, function='__init__', dlgid=self.dlgid, msg='Redis init ERROR !!')
+            log(module=__name__, function='__init__', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
             self.connected = False
 
     
     def create_rcd(self):
         if self.connected:
-            self.rh.hset( self.dlgid, 'LINE', 'NUL')
-            self.rh.hset( self.dlgid, 'OUTPUTS', '-1')
-            self.rh.hset( self.dlgid, 'RESET', 'FALSE')
-            self.rh.hset( self.dlgid, 'POUT', '-1')
-            self.rh.hset( self.dlgid, 'PSLOT', '-1')
-            self.rh.hset( self.dlgid, 'MEMFORMAT', 'FALSE')
-            LOG.info('[%s] Redis init rcd. OK !!' % self.dlgid)
-        else:
-            LOG.info('[%s] Redis not-connected (create_rcd) !!' % self.dlgid)
+            if not self.rh.hexists(self.dlgid, 'LINE'):
+                self.rh.hset( self.dlgid, 'LINE', 'NUL')
+            if not self.rh.hexists(self.dlgid, 'OUTPUTS'):
+                self.rh.hset( self.dlgid, 'OUTPUTS', '-1')
+            if not self.rh.hexists(self.dlgid, 'RESET'):
+                self.rh.hset( self.dlgid, 'RESET', 'FALSE')
+            if not self.rh.hexists(self.dlgid, 'POUT'):
+                self.rh.hset( self.dlgid, 'POUT', '-1')
+            if not self.rh.hexists(self.dlgid, 'PSLOT'):
+                self.rh.hset( self.dlgid, 'PSLOT', '-1')
+            if not self.rh.hexists(self.dlgid, 'MEMFORMAT'):
+                self.rh.hset( self.dlgid, 'MEMFORMAT', 'FALSE')
 
-            
+            log(module=__name__, function='create_rcd', level='SELECT', dlgid=self.dlgid, msg='Redis init rcd. OK !!')
+        else:
+            log(module=__name__, function='create_rcd', dlgid=self.dlgid, msg='Redis not-connected !!')
+
+
     def insert_line(self, line):
         '''
         Inserto la ultima linea de datos en la redis
@@ -55,10 +61,11 @@ class Redis():
         if self.connected:
             try:
                 self.rh.hset( self.dlgid, 'LINE', line )
-            except:  
-                LOG.info('[%s] Redis insert line ERROR !!' % self.dlgid)
+            except Exception as err_var:
+                log(module=__name__, function='insert_line', dlgid=self.dlgid, msg='Redis insert line ERROR !!')
+                log(module=__name__, function='insert_line', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
         else:
-             LOG.info('[%s] Redis not-connected (insert_line) !!' % self.dlgid)
+            log(module=__name__, function='insert_line', dlgid=self.dlgid, msg='Redis not-connected !!')
         return
  
     
@@ -73,7 +80,7 @@ class Redis():
         
             self.rh.hset( self.dlgid, 'OUTPUTS', '-1' )
         else:
-             LOG.info('[%s] Redis not-connected (get_cmd_outputs) !!' % self.dlgid)
+            log(module=__name__, function='get_cmd_outputs', dlgid=self.dlgid, msg='Redis not-connected !!')
 
         return(response)
  
@@ -91,7 +98,7 @@ class Redis():
             self.rh.hset( self.dlgid, 'POUT', '-1')
             self.rh.hset( self.dlgid, 'PSLOT', '-1')    
         else:
-             LOG.info('[%s] Redis not-connected (get_cmd_pilotos) !!' % self.dlgid)           
+            log(module=__name__, function='get_cmd_pilotos', dlgid=self.dlgid, msg='Redis not-connected !!')
  
         return(response)
 
@@ -111,7 +118,7 @@ class Redis():
                 
                 self.rh.hset( self.dlgid, 'RESET', 'FALSE' )
         else:
-             LOG.info('[%s] Redis not-connected (get_cmd_reset) !!' % self.dlgid)    
+            log(module=__name__, function='get_cmd_reset', dlgid=self.dlgid, msg='Redis not-connected !!')
         
         return(response)
         
@@ -127,7 +134,10 @@ if __name__ == '__main__':
     reset = rd.rh.hget('PRUEBA','RESET')
     print('Reset Rd=%s' % reset)
 
-
+    if rd.rh.exists('PRUEBA2'):
+        print('Prueba 2 existe')
+    else:
+        print ('No existe')
     response = rd.get_cmd_reset()
     print ('RSP=%s' % response)
 

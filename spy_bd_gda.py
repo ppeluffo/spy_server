@@ -6,11 +6,8 @@ Modulo de trabajo con la BD GDA
 from sqlalchemy import create_engine
 from sqlalchemy import text
 from spy import Config
-import logging
 from collections import defaultdict
-
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 # ------------------------------------------------------------------------------
 class BDGDA:
@@ -38,18 +35,20 @@ class BDGDA:
 
         try:
             self.engine = create_engine(self.url)
-        except:
+        except Exception as err_var:
             self.connected = False
-            LOG.info('ERROR: GDA engine NOT created')
+            log(module=__name__, function='connect', msg='ERROR: GDA engine NOT created. ABORT !!')
+            log(module=__name__, function='connect', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
             exit(1)
 
         try:
             self.conn = self.engine.connect()
             self.connected = True
             return (True)
-        except:
+        except Exception as err_var:
             self.connected = False
-            LOG.info('ERROR: GDA NOT connected')
+            log(module=__name__, function='connect', msg='ERROR: GDA NOT connected. ABORT !!')
+            log(module=__name__, function='connect', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
             exit(1)
 
         return (False)
@@ -81,7 +80,7 @@ class BDGDA:
 
         '''
         if self.connect() == False:
-            LOG.info('[{0}] ERROR: read_conf_piloto cant connect gda.'.format(dlgid))
+            log(module=__name__, function='read_conf_piloto', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
             return False
 
         query = text("""SELECT spx_unidades_configuracion.nombre as 'canal', 
@@ -96,8 +95,9 @@ class BDGDA:
         d = dict()
         try:
             rp = self.conn.execute(query)
-        except:
-            LOG.info('[{0}] ERROR: read_conf_piloto exec error.'.format(dlgid))
+        except Exception as err_var:
+            log(module=__name__, function='read_conf_piloto', dlgid=dlgid, msg='ERROR: can\'t exec gda !!')
+            log(module=__name__, function='read_conf_piloto', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
             return (d)
 
         results = rp.fetchall()
@@ -124,10 +124,10 @@ class BDGDA:
                 EL diccionario lo manejo con 2 claves para poder usar el metodo get y tener
                 un valor por default en caso de que no tenga alguna clave
         '''
-        LOG.info('[%s] read_dlg_conf' % (dlgid))
+        log(module=__name__, function='read_dlg_conf', dlgid=dlgid, level='SELECT', msg='start')
 
         if self.connect() == False:
-            LOG.info('[{0}] ERROR: read_dlg_conf cant connect gda.'.format(dlgid))
+            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
             return
 
         query = text("""SELECT spx_unidades_configuracion.nombre as 'canal', spx_configuracion_parametros.parametro, 
@@ -141,7 +141,7 @@ class BDGDA:
         try:
             rp = self.conn.execute(query)
         except:
-            LOG.info('[{0}] ERROR: read_dlg_conf excec error.'.format(dlgid))
+            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: can\'t exec gda !!')
             return
 
         results = rp.fetchall()
@@ -149,17 +149,17 @@ class BDGDA:
         for row in results:
             canal, pname, value, pid = row
             d[(canal, pname)] = value
-            LOG.info('[%s] BD conf: [%s][%s]=[%s]' % (dlgid, canal, pname, d[(canal, pname)]))
+            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, level='SELECT', msg='BD conf: [{0}][{1}]=[{2}]'.format( canal, pname, d[(canal, pname)]))
 
         return (d)
 
 
     def update(self, dlgid, d):
 
-        LOG.info('[%s] update' % (dlgid))
+        log(module=__name__, function='update', dlgid=dlgid, level='SELECT', msg='start' )
 
         if self.connect() == False:
-            LOG.info('[{0}] ERROR: update cant connect gda.'.format(dlgid))
+            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
             return False
 
         # PASS1: Inserto frame en la tabla de INITS.
@@ -168,8 +168,9 @@ class BDGDA:
 
         try:
             self.conn.execute(query)
-        except:
-            LOG.info('[{0}] ERROR:  update_gda excec (A) error.'.format(dlgid))
+        except Exception as err_var:
+            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: can\'t exec(1) gda !!')
+            log(module=__name__, function='update', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
             return
 
         # PASS2: Actualizo los parametros dinamicos
@@ -180,11 +181,12 @@ class BDGDA:
                          AND dlgid_id = ( SELECT id FROM spx_unidades WHERE dlgid = '%s'))""" % (value, key, dlgid))
             try:
                 self.conn.execute(query)
-            except:
-                LOG.info('[{0}] ERROR:  update_gda excec (B) error {1}.'.format(dlgid, key))
+            except Exception as err_var:
+                log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: can\'t exec(2) gda !!')
+                log(module=__name__, function='connect', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
                 return
 
-            LOG.info('[%s] update_gda %s=%s' % (dlgid, key, value))
+            log(module=__name__, function='update', dlgid=dlgid, level='SELECT', msg='{0}={1}'.format(key,value))
 
         return
 
@@ -194,10 +196,10 @@ class BDGDA:
         :param dlgid:
         :return: valor del commited_conf de la BD o None en caso de errores
         '''
-        LOG.info('[%s] process_commited_conf' % (dlgid))
+        log(module=__name__, function='process_commited_conf', dlgid=dlgid, level='SELECT', msg='start')
 
         if self.connect() == False:
-            LOG.info('[{0}] ERROR: process_commited_conf cant connect gda.'.format(dlgid))
+            log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
             return
 
         query = text("""SELECT value, configuracion_id FROM spx_configuracion_parametros WHERE parametro = 'COMMITED_CONF' 
@@ -206,22 +208,23 @@ class BDGDA:
 
         try:
             rp = self.conn.execute(query)
-        except:
-            LOG.info('[{0}] ERROR: process_commited_conf exec error.'.format(dlgid))
+        except Exception as err_var:
+            log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='ERROR: can\'t exec gda !!')
+            log(module=__name__, function='process_commited_conf', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
             return
 
         #row = rp.first()
         cc, rid = rp.first()
-        LOG.info('[%s] commited_conf [%s]' % (dlgid, cc))
+        log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='cc={}'.format(cc))
         return (cc)
 
 
     def clear_commited_conf(self, dlgid):
 
-        LOG.info('[%s] clear_commited_conf' % (dlgid))
+        log(module=__name__, function='clear_commited_conf', dlgid=dlgid, level='SELECT', msg='start')
 
         if self.connect() == False:
-            LOG.info('[{0}] ERROR: clear_commited_conf cant connect gda.'.format(dlgid))
+            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
             return
 
         query = text("""UPDATE spx_configuracion_parametros SET value = '0' WHERE parametro = 'COMMITED_CONF' 
@@ -230,8 +233,9 @@ class BDGDA:
         # print(query)
         try:
             self.conn.execute(query)
-        except:
-            LOG.info('[%s] ERROR clear_commited_conf %s' % (dlgid))
+        except Exception as err_var:
+            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='ERROR: can\'t exec gda !!')
+            log(module=__name__, function='clear_commited_conf', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
 
         return
 
@@ -239,7 +243,7 @@ class BDGDA:
     def insert_data_line(self, dlgid, d):
 
         if self.connect() == False:
-            LOG.info('process_: ERROR insert_data_line not connected' )
+            log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
             exit(0)
 
         for key in d:
@@ -252,23 +256,20 @@ class BDGDA:
                          cp.parametro = 'NAME' AND cp.value = '{2}' AND u.dlgid = '{3}' ),( SELECT ubicacion_id FROM spx_instalacion \
                          WHERE unidad_id = ( SELECT id FROM spx_unidades WHERE dlgid = '{3}')))""".format( d['timestamp'], value, key, dlgid ))
 
-            #LOG.info('DEBUG: [%s]->[%s]' % ( key, value))
-
             try:
                 self.conn.execute(query)
-                #LOG.info('process_: insert_data_line %s=%s' % ( key, value))
-            except Exception as error:
-                #print ('EXCEPTION: [%s]' % (error) )
-                LOG.info('process_: ERROR insert_data_line [%s], [%s]->[%s]' % (dlgid, key, value))
-                LOG.info('process_: QUERY [%s]' % (query))
+            except Exception as err_var:
+                log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='ERROR: [{0}]->[{1}]'.format(key,value))
+                log(module=__name__, function='insert_data_line', dlgid=dlgid,msg='QUERY {}'.format(query))
+                log(module=__name__, function='insert_data_line', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
 
         return
 
 
-    def insert_data_line_online(self, dlgid, d):
+    def insert_data_online(self, dlgid, d):
 
         if self.connect() == False:
-            LOG.info('[{0}] ERROR: insert_data_line_online cant connect gda.'.format(dlgid))
+            log(module=__name__, function='insert_data_online', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
             return
 
         for key in d:
@@ -283,14 +284,13 @@ class BDGDA:
             JOIN spx_configuracion_parametros AS cp  ON cp.configuracion_id = uc.id \
             WHERE cp.parametro = 'NAME' AND cp.value = '{2}' AND u.dlgid = '{3}' ), \
             ( SELECT ubicacion_id FROM spx_instalacion WHERE unidad_id = ( SELECT id FROM spx_unidades WHERE dlgid = '{3}')))""".format( d['timestamp'], value, key, dlgid))
-            #LOG.info('DEBUG: [%s]->[%s]' % (key, value))
+
             try:
                 self.conn.execute(query)
-                #LOG.info('process_: insert_data_line_online %s=%s' % (key, value))
-            except Exception as error:
-                # print ('EXCEPTION: [%s]' % (error) )
-                LOG.info('process_: ERROR insert_data_line_online [%s], [%s]->[%s]' % (dlgid, key, value))
-                LOG.info('process_: QUERY [%s]' % (query))
+            except Exception as err_var:
+                log(module=__name__, function='insert_data_online', dlgid=dlgid, msg='ERROR: [{0}]->[{1}]'.format(key,value))
+                log(module=__name__, function='insert_data_online', dlgid=dlgid,msg='QUERY {}'.format(query))
+                log(module=__name__, function='insert_data_online', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
 
             delquery = text("""DELETE FROM spx_online  WHERE medida_id = ( SELECT uc.tipo_configuracion_id FROM spx_unidades AS u \
             JOIN spx_unidades_configuracion AS uc ON uc.dlgid_id = u.id JOIN spx_configuracion_parametros AS cp  ON cp.configuracion_id = uc.id \
@@ -306,10 +306,11 @@ class BDGDA:
             try:
                 self.conn.execute(delquery)
                 #LOG.info('process_: delete_data_line_online %s=%s' % (key, value))
-            except Exception as error:
+            except Exception as err_var:
                 # print ('EXCEPTION: [%s]' % (error) )
-                LOG.info('process_: ERROR delete_data_line_gda_online [%s], [%s]->[%s]' % (dlgid, key, value))
-                LOG.info('process_: QUERY [%s]' % (query))
+                log(module=__name__, function='insert_data_online', dlgid=dlgid, msg='ERROR: DELETE [{0}]->[{1}]'.format(key,value))
+                log(module=__name__, function='insert_data_online', dlgid=dlgid,msg='QUERY: DELETE {}'.format(query))
+                log(module=__name__, function='insert_data_online', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
 
         return
 

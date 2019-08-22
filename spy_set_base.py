@@ -15,12 +15,9 @@ Created on Thu Aug  1 21:43:48 2019
 import os
 import cgi
 import re
-import logging
 from spy_bd_general import BD
 from spy import Config
-
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 #------------------------------------------------------------------------------
 
@@ -67,9 +64,10 @@ class Confbase:
             self.pwrs_modo, self.pwrs_start, self.pwrs_end = re.split('=|,', form.getfirst('PWRS','OFF,00,00'))
             self.pwrs_start = int(self.pwrs_start)
             self.pwrs_end = int(self.pwrs_end)
-        except:
-            LOG.info('[%s] ERROR: pwrs_unpack [%s]' % ( self.dlgid, form.getvalue('PWRS') ))
-            
+        except Exception as err_var:
+            log(module=__name__, function='init_from_qs', level='INFO', dlgid=self.dlgid, msg='ERROR: pwrs_unpack {}'.format(form.getvalue('PWRS')))
+            log(module=__name__, function='init_from_qs', level='INFO', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+
         self.csq = form.getfirst('CSQ', '0')
         self.wrst = form.getfirst('WRST', '0')
         self.dist = form.getfirst('DIST', 'OFF')
@@ -84,21 +82,21 @@ class Confbase:
             corto: solo los parametros que se van a usar para reconfigurar
             largo: todos los parametros ( incluso los que son solo informativos )
         '''
-        LOG.info('[%s] %s tpoll=%s' % ( self.dlgid, tag, self.tpoll ))
-        LOG.info('[%s] %s tdial=%s' % ( self.dlgid, tag, self.tdial ))
-        LOG.info('[%s] %s pwrs_modo=%s' % ( self.dlgid, tag, self.pwrs_modo ))
-        LOG.info('[%s] %s pwrs_start=%s' % ( self.dlgid, tag, self.pwrs_start ))
-        LOG.info('[%s] %s pwrs_end=%s' % ( self.dlgid, tag, self.pwrs_end ))
-        LOG.info('[%s] %s dist=%s' % ( self.dlgid, tag, self.dist ))
-             
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} tpoll={1}'.format(tag, self.tpoll))
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} tdial={1}'.format(tag, self.tdial))
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} pwrs_modo={1}'.format(tag, self.pwrs_modo))
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} pwrs_start={1}'.format(tag, self.pwrs_start))
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} pwrs_end={1}'.format(tag, self.pwrs_end))
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} dist={1}'.format(tag, self.dist))
+
         if longformat is not True:
             return
-        LOG.info('[%s] %s imei=%s' % ( self.dlgid, tag, self.imei ))
-        LOG.info('[%s] %s simid=%s' % ( self.dlgid, tag, self.simid ))
-        LOG.info('[%s] %s ver=%s' % ( self.dlgid, tag, self.ver ))
-        LOG.info('[%s] %s uid=%s' % ( self.dlgid, tag, self.uid ))
-        LOG.info('[%s] %s csq=%s' % ( self.dlgid, tag, self.csq ))
-        LOG.info('[%s] %s wrst=%s' % ( self.dlgid, tag, self.wrst ))
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} imei={1}'.format(tag, self.imei))
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} simid={1}'.format(tag, self.simid))
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} ver={1}'.format(tag, self.ver))
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} uid={1}'.format(tag, self.uid))
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} csq={1}'.format(tag, self.csq))
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} wrst={1}'.format(tag, self.wrst))
         return
  
               
@@ -170,23 +168,23 @@ class Confbase:
         El objeto sobre el cual se llama debe ser la referencia de la BD.
         El 'other' es el objeto con los datos del datalogger
         '''
-        base_response = ''
+        response = ''
         if self.tpoll != other.tpoll:
-           base_response += 'TPOLL=%s:' % self.tpoll
+           response += 'TPOLL=%s:' % self.tpoll
            
         if self.tdial != other.tdial:
-            base_response += 'TDIAL=%s:' % self.tdial
+            response += 'TDIAL=%s:' % self.tdial
             
         if ( self.pwrs_modo != other.pwrs_modo or
             self.pwrs_start != other.pwrs_start or
             self.pwrs_end != other.pwrs_end ):
-            base_response += 'PWRS=%s,%s,%s:' % ( self.pwrs_modo, self.pwrs_start, self.pwrs_end )
+            response += 'PWRS=%s,%s,%s:' % ( self.pwrs_modo, self.pwrs_start, self.pwrs_end )
 
         if self.dist != other.dist:
-            base_response += 'DIST=%s:' % self.dist
+            response += 'DIST=%s:' % self.dist
             
-        LOG.info('[%s] confbase_RSP: [%s]' % ( self.dlgid, base_response))
-        return(base_response) 
+        log(module=__name__, function='get_response_string', level='SELECT', dlgid=self.dlgid,msg='confbase_RSP: {}'.format(response))
+        return(response)
  
        
     def update_bd(self):

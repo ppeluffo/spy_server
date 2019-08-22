@@ -10,9 +10,7 @@ import cgi
 import re
 from spy_bd_gda import BDGDA
 from spy import Config
-import logging
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 #------------------------------------------------------------------------------
 
@@ -61,7 +59,7 @@ class Piloto:
         d = bd.read_conf_piloto(dlgid)
         # Controlo que hallan datos.
         if d == {}:
-            LOG.info('[%s]: ERROR: No hay datos en la bd.' % dlgid )
+            log(module=__name__, function='init_from_bd', dlgid=dlgid, msg='ERROR: No hay datos en la bd')
             return False
         
         # Convierto el dict a la estructura Piloto
@@ -97,9 +95,7 @@ class Piloto:
             return True
         else:
             return False
- 
-        return True
- 
+
           
     def get_response_string(self):
         '''

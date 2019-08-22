@@ -41,12 +41,9 @@ Host: www.spymovil.com
 """
 
 import cgi
-import logging
 from spy_bd_bdspy import BDSPY
 from spy import Config
-
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 #------------------------------------------------------------------------------
 class SCAN_frame:
@@ -56,11 +53,11 @@ class SCAN_frame:
         form = cgi.FieldStorage()   
         self.dlgid = form.getvalue('DLGID')
         self.uid = form.getvalue('UID')
-        LOG.info('[%s] dlgconf DLGID=%s, UID=%s' % ( self.dlgid, self.dlgid, self.uid))
+        log(module=__name__, function='__init__', dlgid=self.dlgid, msg='DLGID={0}, UID={1}'.format ( self.dlgid, self.dlgid, self.uid))
         return
     
-    def sendResponse(self, response ):
-        LOG.info('[%s] RSP=[%s]' % ( self.dlgid, response) )
+    def send_response(self, response ):
+        log(module='SCAN', function='send_response', dlgid=self.dlgid, msg='RSP={0}'.format(response))
         print('Content-type: text/html\n')
         print('<html><body><h1>%s</h1></body></html>' % (response) )
    
@@ -76,17 +73,17 @@ class SCAN_frame:
         
         bd = BDSPY( Config['MODO']['modo'] )
         # Primero vemos que el dlgid este definido sin importar su uid
-        if bd.dlgIsDefined( self.dlgid ): 
-            LOG.info('[%s] Scan OK !'% ( self.dlgid) )
-            self.sendResponse('SCAN_OK')     
+        if bd.dlg_is_defined( self.dlgid ):
+            log(module=__name__, function='process', dlgid=self.dlgid, msg='SCAN OK')
+            self.send_response('SCAN_OK')
         # Si no esta definido, busco si hay algun uid y a que dlgid corresponde
-        elif bd.uidIsDefined( self.uid ):
+        elif bd.uid_is_defined( self.uid ):
             new_dlgid = bd.get_dlgid_from_uid( self.uid )
-            LOG.info('[%s] bdconf NEW_DLGID=%s' % ( self.dlgid, new_dlgid) )
-            self.sendResponse('DLGID=%s' % new_dlgid )      
+            log(module=__name__, function='process', dlgid=self.dlgid, msg='bdconf NEW_DLGID={}'.format(new_dlgid))
+            self.send_response('DLGID=%s' % new_dlgid )
         else:
-            LOG.info('[%s] DLGID/UID not Defined !!'% ( self.dlgid) )
-            self.sendResponse('NOTDEFINED')
+            log(module=__name__, function='process', dlgid=self.dlgid, msg='DLGID/UID not Defined !!')
+            self.send_response('NOTDEFINED')
             
         return
     

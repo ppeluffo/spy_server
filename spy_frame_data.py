@@ -22,9 +22,7 @@ from spy import Config
 from spy_bd_redis import Redis
 from spy_bd_general import BD
 from datetime import datetime
-import logging
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 #------------------------------------------------------------------------------
 
@@ -40,23 +38,24 @@ class DATA_frame:
         # y los control en otra
         self.control_codes = form.getlist('CTL')
         self.response = 'RX_OK:'
+        log(module=__name__, function='__init__', dlgid=self.dlgid, msg='start')
         return
 
 
-    def sendResponse(self):
-        #response = 'SCAN line: [dlgid=%s, uid=%s]' % (self.dlgid, self.uid )
-        LOG.info('[%s] RSP=%s' % ( self.dlgid, self.response))
+    def send_response(self):
+        log(module=__name__, function='send_response', dlgid=self.dlgid, msg='RSP={0}'.format(self.response))
         print('Content-type: text/html\n')
         print('<html><body><h1>%s</h1></body></html>' % (self.response))
         return
 
 
-    def processCommitedConf(self):
+    def process_commited_conf(self):
         '''
         Leo de la BD el commited_conf. Si esta en 1 lo pongo en 0
         Si en la respuesta no hay un reset ( puesto por la REDIS ) y el
         commited_conf fue 1, pongo un RESET.
         '''
+        log(module=__name__, function='process_commited_conf', dlgid=self.dlgid, level='SELECT', msg='start')
         bd = BD( Config['MODO']['modo'] )
         commited_conf = bd.process_commited_conf(self.dlgid)
         if ( (commited_conf == 1) and ( 'RESET' not in self.response) ):
@@ -64,7 +63,7 @@ class DATA_frame:
             bd.clear_commited_conf(self.dlgid)
 
 
-    def processFrame(self):
+    def process(self):
         '''
         Proceso un frame de datos.
         Consiste en escribir el payload self.data_lines en un archivo con el 
@@ -80,13 +79,13 @@ class DATA_frame:
         tmp_file = os.path.join( os.path.abspath(''), rxpath, tmp_fname )
         dat_fname = '%s_%s.dat' % ( self.dlgid, now.strftime('%Y%m%d%H%M%S') )
         dat_file = os.path.join( os.path.abspath(''), rxpath, dat_fname )
-        LOG.info('[%s] FILE: %s' % ( self.dlgid,  dat_fname ))
+        log(module=__name__, function='process', dlgid=self.dlgid, level='SELECT', msg='FILE: {}'.format(dat_file))
         # Abro un archivo temporal donde guardo los datos
         ziplines = list(zip(self.control_codes, self.data_lines))
         with open(tmp_file, 'w') as fh:
             for (control_code, data_line) in ziplines:
                 fh.write(data_line + '\n')
-                LOG.info('[%s] [%s] dataline: %s' % ( self.dlgid, control_code, data_line ))
+                log(module=__name__, function='process', dlgid=self.dlgid, level='SELECT',msg='clt={0}, datline={1}'.format(control_code, data_line))
         # Al final lo renombro.
         os.rename(tmp_file, dat_file)
         # Genero la respuesta
@@ -102,9 +101,9 @@ class DATA_frame:
         self.response += redis_db.get_cmd_pilotos()
         self.response += redis_db.get_cmd_reset()
 
-        self.processCommitedConf()
+        self.process_commited_conf()
 
         # Envio la respuesta
-        self.sendResponse()
+        self.send_response()
         return
             

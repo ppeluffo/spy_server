@@ -8,10 +8,7 @@ Created on Thu Aug  8 09:49:58 2019
 
 import cgi
 import re
-import logging
-
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 #------------------------------------------------------------------------------
 
@@ -43,15 +40,16 @@ class Confdoutput:
                 self.consigna_dia_hhmm, self.consigna_noche_hhmm = re.split('=|,', form.getvalue('CONS'))   
                 self.consigna_dia_hhmm = int( self.consigna_dia_hhmm)
                 self.consigna_noche_hhmm = int( self.consigna_noche_hhmm)
-            except:
-                LOG.info('[%s] ERROR: douts_unpack [%s]' % ( self.dlgid, form.getvalue('DOUTS' )))
+            except Exception as err_var:
+                log(module=__name__, function='init_from_qs', dlgid=self.dlgid, msg='ERROR: douts_unpack {}'.format(form.getvalue('DOUTS')))
+                log(module=__name__, function='init_from_qs',dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
         return
 
     def log(self, tag='' ):
-        LOG.info('[%s] %s douts=%s' % ( self.dlgid, tag, self.douts ))
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} douts={1}'.format( tag, self.douts))
         if self.douts == 'CONS':
-            LOG.info('[%s] %s cons_dia_hhmm=%s' % ( self.dlgid, tag, self.consigna_dia_hhmm ))
-            LOG.info('[%s] %s cons_noche_hhmm=%s' % ( self.dlgid, tag, self.consigna_noche_hhmm ))
+            log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} cons_dia_hhmm={1}'.format(tag, self.consigna_dia_hhmm))
+            log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} cons_noche_hhmm={1}'.format(tag, self.consigna_noche_hhmm))
         return
                
     def init_from_bd( self, dcnf ):
@@ -97,5 +95,5 @@ class Confdoutput:
         elif self.douts != other.douts:
             response += 'DOUT=%s:' % self.douts
                      
-        LOG.info('[%s] confdputput_RSP: [%s]' % ( self.dlgid,response))
+        log(module=__name__, function='get_response_string', level='SELECT', dlgid=self.dlgid,msg='confbase_RSP: {}'.format(response))
         return(response)      

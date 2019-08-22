@@ -8,9 +8,7 @@ Created on Thu Aug  8 08:21:50 2019
 
 import logging
 from spy_channel_counter import CounterChannel
-
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 #------------------------------------------------------------------------------
 
@@ -71,7 +69,7 @@ class Confcounter:
             response += self.C0.get_response_string()
         if self.C1 != other.C1:
             response += self.C1.get_response_string()
-            
-        LOG.info('[%s] confcounter_RSP: [%s]' % ( self.dlgid,response))
-        return(response)      
+
+        log(module=__name__, function='get_response_string', level='SELECT', dlgid=self.dlgid, msg='confbase_RSP: {}'.format(response))
+        return(response)
 

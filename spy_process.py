@@ -12,16 +12,17 @@ import sys
 import glob
 import time
 import re
-import spy_log as log
+import spy_log as LOG
+from spy_bd_general import BD
+import ast
 
 # -----------------------------------------------------------------------------
 Config = configparser.ConfigParser()
 Config.read('spy.conf')
 #
-from spy_bd_general import BD
-bd = BD()
-
-# ------------------------------------------------------------------------------
+bd = BD(Config['MODO']['modo'])
+console = ast.literal_eval( Config['MODO']['consola'] )
+#-----------------------------------------------------------------------------
 
 def format_fecha_hora(fecha, hora):
     '''
@@ -40,7 +41,7 @@ def process_line(dlgid, line):
     Recibo una linea, la parseo y dejo los campos en un diccionario
     Paso este diccionario a la BD para que la inserte.
     '''
-    #LOG.info('process_: line: [%s]' % line)
+    LOG.log(module=__name__, function='process_line', level='SELECT', dlgid='PROC00', console=console, msg='line={}'.format(line))
     line = line.rstrip('\n|\r|\t')
     fields = re.split(',', line )
     d = dict()
@@ -48,7 +49,6 @@ def process_line(dlgid, line):
     for field in fields[2:]:
         key, value = re.split('=', field)
         d[key] = value
-    #LOG.info('process_: dict=%s' % d)
     bd.insert_data_line(dlgid, d)
     return
 
@@ -63,9 +63,8 @@ def process_file(file):
     Debo entonces resetear el datasource antes de procesar c/archivo
     '''
     dirname, filename = os.path.split(file)
-    LOG.info('process_: file: %s' % filename)
+    LOG.log(module=__name__, function='process_file', level='SELECT', dlgid='PROC00', console=console, msg='file={}'.format(filename))
     dlgid, *res = re.split('_', filename)
-    #LOG.info('process_: dlgid: %s' % dlgid)
     bd.reset_datasource(dlgid)
     with open(file) as myfile:
         line = myfile.readline()
@@ -75,22 +74,25 @@ def process_file(file):
     try:
         bkdirname = Config['PROCESS']['process_bk_path']
         bkfile = os.path.join(bkdirname, filename)
-        #LOG.info('process_: bkfile: %s' % bkfile)
+        LOG.log(module=__name__, function='process_file', level='SELECT', dlgid='PROC00', console=console, msg='bkfile={}'.format(bkfile))
         os.rename(file, bkfile)
-    except:
-        LOG.info('process_: [%s] no puedo pasar a bk' % file)
+    except Exception as err_var:
+        LOG.log(module=__name__, function='process_file', console=console, dlgid='PROC00', msg='[{0}] no puedo pasar a bk [{1}]'.format(file, err_var))
+        LOG.log(module=__name__, function='process_file', dlgid=self.dlgid,  msg='EXCEPTION {}'.format(err_var))
     return
 
 
 if __name__ == '__main__':
 
     # Lo primero es configurar el logger
-    LOG = log.config_logger()
-    dirname = Config['PROCESS']['process_rx_path']
-    LOG.info('process_: dirname: %s' % dirname)
+    LOG.config_logger()
 
+    dirname = Config['PROCESS']['process_rx_path']
+    LOG.log(module=__name__, function='main', console=console, dlgid='PROC00', msg='dirname={}'.format(dirname))
     while True:
         for file in glob.glob(dirname + '/*.dat'):
+            LOG.log(module=__name__, function='main', level='SELECT', dlgid='PROC00',console=console, msg='File {}'.format(file))
             process_file(file)
+
         time.sleep(60)
 

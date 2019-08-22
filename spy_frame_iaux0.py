@@ -39,9 +39,7 @@ Host: www.spymovil.com
 
 import cgi
 from spy_channel_piloto import Piloto
-import logging
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 #------------------------------------------------------------------------------
 class IAUX0_frame:
@@ -53,12 +51,12 @@ class IAUX0_frame:
         self.dlgid = form.getfirst('DLGID', 'DLG_ERR')
         self.plt_dlg = Piloto(self.dlgid)
         self.plt_dlg.init_from_qs()
-        LOG.info( '[%s] dlgconf plt: %s' % (self.dlgid, self.plt_dlg) )
+        log(module=__name__, function='__init__', dlgid=self.dlgid, msg='dlg {0}'.format(self.plt_dlg))
         return
     
     
-    def sendResponse(self, response ):
-        LOG.info('[%s] RSP=[%s]' % ( self.dlgid, response))
+    def send_response(self, response ):
+        log(module=__name__, function='send_response', dlgid=self.dlgid, msg='RSP={0}'.format(response))
         print('Content-type: text/html\n')
         print('<html><body><h1>%s</h1></body></html>' % (response))
    
@@ -78,22 +76,22 @@ class IAUX0_frame:
         self.plt_bd = Piloto(self.dlgid)
         # Con los datos de la BD.
         if self.plt_bd.init_from_bd( self.dlgid ) == True:
-            LOG.info( '[%s] bdconf plt:  %s' % ( self.dlgid, self.plt_bd) )
+            log(module=__name__, function='process', dlgid=self.dlgid, msg='bd {0}'.format(self.plt_bd))
         else:
-            LOG.info( '[%s] BD PILOTO ERROR !!' % self.dlgid )
-            self.sendResponse('ERROR')
+            log(module=__name__, function='process', dlgid=self.dlgid, msg='BD PILOTO ERROR !!')
+            self.send_response('ERROR')
             return
         
         # Comparo la configuracion que trae el dlg y la de la bd y repondo al datalogger
         response = ''
         if self.plt_dlg == self.plt_bd:
-            LOG.info('[%s] Conf PILOTO: BD eq DLG' % ( self.dlgid) )
+            log(module=__name__, function='process', dlgid=self.dlgid, msg='plt BDconf eq DLGconf')
             response = 'PLT_OK'
         else:
-            LOG.info('[%s] Conf PILOTO: BD ne DLG' % ( self.dlgid) )
+            log(module=__name__, function='process', dlgid=self.dlgid, msg='plt BDconf ne DLGconf')
             response = self.plt_bd.get_response_string()
             
-        self.sendResponse(response)
+        self.send_response(response)
         return  
     
     

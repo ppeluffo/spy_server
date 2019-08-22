@@ -8,14 +8,15 @@ Created on Wed Aug 14 09:19:01 2019
 
 import logging
 import logging.handlers
-
+import ast
+from spy import Config
 
 def config_logger():
     # logging.basicConfig(filename='log1.log', filemode='a', format='%(asctime)s %(name)s %(levelname)s %(message)s', level = logging.DEBUG, datefmt = '%d/%m/%Y %H:%M:%S' )
     logging.basicConfig(level=logging.DEBUG)
 
     # formatter = logging.Formatter('SPX %(asctime)s  [%(levelname)s] [%(name)s] %(message)s', datefmt='%Y-%m-%d %T')
-    formatter = logging.Formatter('SPY [%(levelname)s] [%(name)s] %(message)s')
+    formatter = logging.Formatter('SPY_r4 [%(levelname)s] [%(name)s] %(message)s')
     handler = logging.handlers.SysLogHandler('/dev/log')
     handler.setFormatter(formatter)
     # Creo un logger derivado del root para usarlo en los modulos
@@ -31,3 +32,31 @@ def config_logger():
     return LOG
 
 # ------------------------------------------------------------------------------
+
+def log(module,function, msg='', dlgid='00000', console=False, level='INFO'):
+    '''
+    Se encarga de mandar la logfile el mensaje.
+    Si el level es SELECT, dependiendo del dlgid se muestra o no
+    Si console es ON se hace un print del mensaje
+    '''
+    list_dlg = ast.literal_eval(Config['SELECT']['list_dlg'])
+
+    if level == 'SELECT':
+        if dlgid in list_dlg:
+            logging.info('[{0}][{1}][{2}]: [{3}]'.format( dlgid, module, function, msg))
+            if console == True:
+                print('Process [{0}][{1}][{2}][{3}]'.format(module,function,dlgid,msg))
+            return
+        else:
+            return
+
+    logging.info('[{0}][{1}][{2}]: [{3}]'.format( dlgid, module, function,msg))
+    if console:
+        print('Process [{0}][{1}][{2}][{3}]'.format(module, function, dlgid, msg))
+
+    return
+
+
+if __name__ == '__main__':
+    from spy import Config
+    list_dlg = ast.literal_eval(Config['SELECT']['list_dlg'])

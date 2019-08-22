@@ -18,10 +18,7 @@ from spy_set_digital import Confdigital
 from spy_set_counter import Confcounter
 from spy_set_doutput import Confdoutput
 from spy import Config
-
-import logging
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 #------------------------------------------------------------------------------
 
@@ -37,23 +34,24 @@ class INIT_frame:
         self.response = now.strftime('INIT_OK:CLOCK=%y%m%d%H%M:')
         form = cgi.FieldStorage()
         self.dlgid = form.getfirst('DLGID', 'DLG_ERR')
+        log(module=__name__, function='__init__', dlgid=self.dlgid, msg='start')
         return
  
     
     def send_response(self):
-        LOG.info('[%s] RSP=[%s]' % ( self.dlgid, self.response))
+        log(module=__name__, function='send_response', dlgid=self.dlgid, msg='RSP={0}'.format(self.response))
         print('Content-type: text/html\n')
         print('<html><body><h1>%s</h1></body></html>' % (self.response))
         return
  
          
-    def process_frame(self):
-        LOG.info('PV_process_frame')
+    def process(self):
+        log(module=__name__, function='process', dlgid=self.dlgid, level='SELECT', msg='start' )
         # Leo toda la configuracion desde la BD en un dict.
         bd = BD( Config['MODO']['modo'] )
         dcnf = bd.read_dlg_conf( self.dlgid)
         if dcnf == {}:
-            LOG.info('[%s] ERROR: No hay datos en la BD' % self.dlgid )
+            log(module=__name__, function='process', dlgid=self.dlgid, msg='ERROR: No hay datos en la BD')
             self.response = 'ERROR'
             self.send_response()
             return
@@ -74,7 +72,7 @@ class INIT_frame:
     
     
     def PV_process_conf_parametros_base(self, dcnf):
-        LOG.info('PV_process_conf_parametros_base')
+        log(module=__name__, function='PV_process_conf_parametros_base', dlgid=self.dlgid, level='SELECT', msg='start')
         # Leo la configuracion base que trae el frame del datalogger
         self.confbase_dlg = Confbase(self.dlgid)        # Creo una conf.base vacia ( objeto )  
         self.confbase_dlg.init_from_qs()                # Lo relleno leyendo desde el query_string
@@ -86,19 +84,18 @@ class INIT_frame:
         self.confbase_bd.log(longformat=False, tag='bdconf')
        
         if self.confbase_dlg == self.confbase_bd:
-            LOG.info('[%s] Conf BASE: BD eq DLG' % (self.dlgid) )
+            log(module=__name__, function='PV_process_conf_parametros_base', dlgid=self.dlgid, level='SELECT', msg='Conf BASE: BD eq DLG')
         else:
-            LOG.info('[%s] Conf BASE: BD ne DLG' % (self.dlgid) )
+            log(module=__name__, function='PV_process_conf_parametros_base', dlgid=self.dlgid, level='SELECT', msg='Conf BASE: BD ne DLG')
             self.response += self.confbase_bd.get_response_string( self.confbase_dlg )
-            LOG.info('[%s] RSP=[%s]' % ( self.dlgid, self.response))
+            log(module=__name__, function='PV_process_conf_parametros_base', dlgid=self.dlgid, level='SELECT', msg='RSP=[{}]'.format(self.response))
         # Actualizo la BD con datos de init ( ipaddress, imei, uid ....) que trae el datalogger
         self.confbase_dlg.update_bd()
         return
     
     
     def PV_process_conf_parametros_analog(self, dcnf):
-        LOG.info('PV_process_conf_parametros_analog') 
- 
+        log(module=__name__, function='PV_process_conf_parametros_analog', dlgid=self.dlgid, level='SELECT', msg='start')
         self.confanalog_dlg = Confanalog(self.dlgid)    # Creo una conf.base vacia ( objeto )  
         self.confanalog_dlg.init_from_qs()              # Lo relleno leyendo desde el query_string
         self.confanalog_dlg.log(tag='dlgconf')
@@ -109,16 +106,16 @@ class INIT_frame:
         self.confanalog_bd.log(tag='bdconf')
        
         if self.confanalog_dlg == self.confanalog_bd:
-            LOG.info('[%s] Conf ANALOG: BD eq DLG' % (self.dlgid) )
+            log(module=__name__, function='PV_process_conf_parametros_analog', dlgid=self.dlgid, level='SELECT',msg='Conf ANALOG: BD eq DLG')
         else:
-            LOG.info('[%s] Conf ANALOG: BD ne DLG' % (self.dlgid) )
+            log(module=__name__, function='PV_process_conf_parametros_analog', dlgid=self.dlgid, level='SELECT',msg='Conf ANALOG: BD ne DLG')
             self.response += self.confanalog_bd.get_response_string( self.confanalog_dlg )
-            LOG.info('[%s] RSP=[%s]' % ( self.dlgid, self.response))
+            log(module=__name__, function='PV_process_conf_parametros_analog', dlgid=self.dlgid, level='SELECT',msg='RSP=[{}]'.format(self.response))
         return
  
        
     def PV_process_conf_parametros_digital(self, dcnf):
-        LOG.info('PV_process_conf_parametros_digital')
+        log(module=__name__, function='PV_process_conf_parametros_digital', dlgid=self.dlgid, level='SELECT', msg='start')
                 
         self.confdigital_dlg = Confdigital(self.dlgid)      
         self.confdigital_dlg.init_from_qs()              
@@ -130,17 +127,17 @@ class INIT_frame:
         self.confdigital_bd.log(tag='bdconf')
        
         if self.confdigital_dlg == self.confdigital_bd:
-            LOG.info('[%s] Conf DIGITAL: BD eq DLG' % (self.dlgid) )
+            log(module=__name__, function='PV_process_conf_parametros_digital', dlgid=self.dlgid, level='SELECT', msg='Conf DIGITAL: BD eq DLG')
         else:
-            LOG.info('[%s] Conf DIGITAL: BD ne DLG' % (self.dlgid) )
+            log(module=__name__, function='PV_process_conf_parametros_digital', dlgid=self.dlgid, level='SELECT',msg='Conf DIGITAL: BD ne DLG')
             self.response += self.confdigital_bd.get_response_string( self.confdigital_dlg )
-            LOG.info('[%s] RSP=[%s]' % ( self.dlgid, self.response))
+            log(module=__name__, function='PV_process_conf_parametros_digital', dlgid=self.dlgid, level='SELECT',msg='RSP=[{}]'.format(self.response))
         return
 
         
     def PV_process_conf_parametros_counter(self, dcnf):
-        LOG.info('PV_process_conf_parametros_counter')
-        
+        log(module=__name__, function='PV_process_conf_parametros_counter', dlgid=self.dlgid, level='SELECT', msg='start')
+
         self.confcounter_dlg = Confcounter(self.dlgid)      
         self.confcounter_dlg.init_from_qs()              
         self.confcounter_dlg.log(tag='dlgconf')
@@ -151,17 +148,17 @@ class INIT_frame:
         self.confcounter_bd.log(tag='bdconf')
        
         if self.confcounter_dlg == self.confcounter_bd:
-            LOG.info('[%s] Conf COUNTER: BD eq DLG' % (self.dlgid) )
+            log(module=__name__, function='PV_process_conf_parametros_counter', dlgid=self.dlgid, level='SELECT', msg='Conf COUNTER: BD eq DLG')
         else:
-            LOG.info('[%s] Conf COUNTER: BD ne DLG' % (self.dlgid) )
+            log(module=__name__, function='PV_process_conf_parametros_counter', dlgid=self.dlgid, level='SELECT',msg='Conf COUNTER: BD ne DLG')
             self.response += self.confcounter_bd.get_response_string( self.confcounter_dlg )
-            LOG.info('[%s] RSP=[%s]' % ( self.dlgid, self.response))
+            log(module=__name__, function='PV_process_conf_parametros_counter', dlgid=self.dlgid, level='SELECT',msg='RSP=[{}]'.format(self.response))
         return
 
 
     def PV_process_conf_parametros_doutput(self, dcnf):
-        LOG.info('PV_process_conf_parametros_doutput')
-        
+        log(module=__name__, function='PV_process_conf_parametros_doutput', dlgid=self.dlgid, level='SELECT', msg='start')
+
         self.confdoutput_dlg = Confdoutput(self.dlgid)      
         self.confdoutput_dlg.init_from_qs()              
         self.confdoutput_dlg.log(tag='dlgconf')
@@ -172,9 +169,9 @@ class INIT_frame:
         self.confdoutput_bd.log(tag='bdconf')
        
         if self.confdoutput_dlg == self.confdoutput_bd:
-            LOG.info('[%s] Conf DOUTPUT: BD eq DLG' % (self.dlgid) )
+            log(module=__name__, function='PV_process_conf_parametros_doutput', dlgid=self.dlgid, level='SELECT', msg='Conf DOUTPUT: BD eq DLG')
         else:
-            LOG.info('[%s] Conf DOUTPUT: BD ne DLG' % (self.dlgid) )
+            log(module=__name__, function='PV_process_conf_parametros_doutput', dlgid=self.dlgid, level='SELECT', msg='Conf DOUTPUT: BD ne DLG')
             self.response += self.confdoutput_bd.get_response_string( self.confdoutput_dlg )
-            LOG.info('[%s] RSP=[%s]' % ( self.dlgid, self.response))
+            log(module=__name__, function='PV_process_conf_parametros_doutput', dlgid=self.dlgid, level='SELECT', msg='RSP=[{}]'.format(self.response))
         return

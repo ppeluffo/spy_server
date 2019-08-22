@@ -6,14 +6,10 @@ En el init me conecto y me quedo con el conector.
 Luego, c/metodo me da los parametros que quiera
 """
 
-import logging
 from spy_bd_gda import BDGDA
 from spy_bd_ose import BDOSE
 from spy_bd_bdspy import BDSPY
-
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
-
+from spy_log import log
 #------------------------------------------------------------------------------
 class BD:
     
@@ -25,15 +21,15 @@ class BD:
 
     def process_commited_conf(self, dlgid):
 
-        self.findDataSource(dlgid)
-        LOG.info('[%s] process_commited_conf DS=%s' % (dlgid, self.datasource))
+        self.find_datasource(dlgid)
+        log(module=__name__, function='process_commited_conf', level='SELECT', dlgid=dlgid, msg='DS={}'.format(self.datasource))
 
         if self.datasource == 'GDA':
             bd = BDGDA(self.modo)
         elif self.datasource == 'bd_ose':
             bd = BDOSE(self.modo)
         else:
-            LOG.info('[%s] process_commited_conf DS=%s NOT implemented' % (dlgid, self.datasource))
+            log(module=__name__, function='process_commited_conf', level='INFO', dlgid=dlgid, msg='DS={} NOT implemented'.format(self.datasource))
             return
 
         cc = bd.process_commited_conf(dlgid)
@@ -44,22 +40,22 @@ class BD:
         '''
         Reseteo el valor de commited_conf a 0
         '''
-        self.findDataSource(dlgid)
-        LOG.info('[%s] clear_commited_conf DS=%s' % (dlgid, self.datasource))
+        self.find_datasource(dlgid)
+        log(module=__name__, function='clear_commited_conf', level='SELECT', dlgid=dlgid, msg='DS={}'.format(self.datasource))
 
         if self.datasource == 'GDA':
             bd = BDGDA(self.modo)
         elif self.datasource == 'bd_ose':
             bd = BDOSE(self.modo)
         else:
-            LOG.info('[%s] clear_commited_conf datasource error !!' % (dlgid))
+            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='DS ERROR !!' )
             return
 
         cc = bd.clear_commited_conf(dlgid)
         return
 
 
-    def findDataSource( self, dlgid ):
+    def find_datasource( self, dlgid ):
         """
         Determina en que base de datos (GDA/TAHONA/bd_ose) esta definido el dlg
         Retorna True/False
@@ -67,19 +63,18 @@ class BD:
         En esta instancia si el datasource es bd_ose, determinamos a que grupo pertenece de modo
         de ahorrarle trabajo luego a las funciones de lectura/escritura de la BD.
         """
-
         # Si ya tengo el datasource no tengo que consultar a la BD.
         if self.datasource == 'GDA' or self.datasource == 'bd_ose':
             return
 
         bd = BDSPY(self.modo)
-        self.datasource = bd.findDataSource(dlgid)
+        self.datasource = bd.find_data_source(dlgid)
         return
 
 
     def reset_datasource(self, dlgid):
         self.datasource = ''
-        LOG.info('[{0}] reset_DataSource'.format(dlgid))
+        log(module=__name__, function='reset_datasource', level='SELECT', dlgid=dlgid, msg='start')
 
 
     def read_dlg_conf( self, dlgid):
@@ -89,18 +84,18 @@ class BD:
         del programa de donde esta.
         Retorno un diccionario con un indice doble ( canal, parametro )
         '''
-        LOG.info('[%s] dlg_read_conf' % ( dlgid) )
+        log(module=__name__, function='read_dlg_conf', level='SELECT', dlgid=dlgid, msg='start')
         # En ppio no se en que BD esta definido el datalogger. Debo leer su datasource
 
-        self.findDataSource(dlgid)
-        LOG.info('[%s] dlg_read_conf_from_bd DS=%s' % ( dlgid, self.datasource) )
+        self.find_datasource(dlgid)
+        log(module=__name__, function='read_dlg_conf', level='SELECT', dlgid=dlgid, msg='DS={}'.format(self.datasource))
 
         if self.datasource == 'GDA':
             bd = BDGDA(self.modo)
         elif self.datasource == 'bd_ose':
             bd = BDOSE(self.modo)
         else:
-            LOG.info('[%s] ERROR: dlg_read_conf_from_bd DS error' % ( dlgid) )
+            log(module=__name__, function='read_dlg_conf', dlgid=dlgid,msg='DS ERROR !!')
             return
 
         d = bd.read_dlg_conf(dlgid)
@@ -113,15 +108,15 @@ class BD:
         Determino en que BD debo trabajar.
 
         '''
-        self.findDataSource(dlgid)
-        LOG.info('[%s] update_bd DS=%s' % ( dlgid, self.datasource) )
+        self.find_datasource(dlgid)
+        log(module=__name__, function='update', level='SELECT', dlgid=dlgid, msg='DS={}'.format(self.datasource))
 
         if self.datasource == 'GDA':
             bd = BDGDA(self.modo)
         elif self.datasource == 'bd_ose':
             bd = BDOSE(self.modo)
         else:
-            LOG.info('[%s] ERROR: update datasource error' % (dlgid))
+            log(module=__name__, function='update', level='SELECT', dlgid=dlgid, msg='DS ERROR !!')
             return
 
         bd.update(dlgid, d)
@@ -130,18 +125,18 @@ class BD:
 
     def insert_data_line(self, dlgid, d):
 
-        self.findDataSource(dlgid)
-        LOG.info('[%s] insert_data_line DS=%s' % (dlgid, self.datasource))
+        self.find_datasource(dlgid)
+        log(module=__name__, function='insert_data_line', level='SELECT', dlgid=dlgid, msg='DS={}'.format(self.datasource))
 
         if self.datasource == 'GDA':
             bd = BDGDA(self.modo)
         elif self.datasource == 'bd_ose':
             bd = BDOSE(self.modo)
         else:
-            LOG.info('[%s] process_: ERROR: insert_data_line DS NOT implemented' % (dlgid))
+            log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='DS ERROR !!' )
             return
 
         bd.insert_data_line(dlgid, d)
-        bd.insert_data_line_online(dlgid, d)
+        bd.insert_data_online(dlgid, d)
         return
 

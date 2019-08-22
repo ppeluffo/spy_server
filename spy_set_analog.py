@@ -6,11 +6,8 @@ Created on Wed Aug  7 20:51:49 2019
 @author: pablo
 """
 
-import logging
 from spy_channel_analog import AnalogChannel
-
-# Creo un logger local child.
-LOG = logging.getLogger(__name__)
+from spy_log import log
 
 #------------------------------------------------------------------------------
 
@@ -118,6 +115,6 @@ class Confanalog:
             response += self.A6.get_response_string()
         if self.A7 != other.A7:
             response += self.A7.get_response_string()
-            
-        LOG.info('[%s] confanalog_RSP: [%s]' % ( self.dlgid,response))
-        return(response)      
+
+        log(module=__name__, function='get_response_string', level='SELECT', dlgid=self.dlgid, msg='confanalog_RSP: {}'.format(response))
+        return(response)

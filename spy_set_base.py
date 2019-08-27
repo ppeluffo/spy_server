@@ -15,8 +15,6 @@ Created on Thu Aug  1 21:43:48 2019
 import os
 import cgi
 import re
-from spy_bd_general import BD
-from spy import Config
 from spy_log import log
 
 #------------------------------------------------------------------------------
@@ -30,7 +28,6 @@ class Confbase:
     uid
     ...
     '''
-    
     def __init__(self, dlgid):
         self.dlgid = dlgid
         self.tpoll = ''
@@ -187,14 +184,13 @@ class Confbase:
         return(response)
  
        
-    def update_bd(self):
+    def get_data_for_update(self):
         '''
         La configuracion base se guarda en la BD para tener los datos actualizados
         de c/datalogger
         Preparo un dict donde paso todos los parametros a actualizar.
         '''
-        bd = BD( Config['MODO']['modo'] )
-        d = dict()  
+        d = dict()
         try:
             d['IPADDRESS'] = cgi.escape(os.environ["REMOTE_ADDR"])
         except:
@@ -207,8 +203,7 @@ class Confbase:
         d['UID'] = self.uid
         d['SIMID'] = self.simid
         d['COMMITED_CONF'] = 0
-        
-        bd.update(self.dlgid, d)
-        return
+
+        return d
     
     

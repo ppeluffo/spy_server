@@ -20,7 +20,6 @@ import ast
 Config = configparser.ConfigParser()
 Config.read('spy.conf')
 #
-bd = BD(Config['MODO']['modo'])
 console = ast.literal_eval( Config['MODO']['consola'] )
 #-----------------------------------------------------------------------------
 
@@ -36,7 +35,7 @@ def format_fecha_hora(fecha, hora):
     return(timestamp)
 
 
-def process_line(dlgid, line):
+def process_line( line, bd):
     '''
     Recibo una linea, la parseo y dejo los campos en un diccionario
     Paso este diccionario a la BD para que la inserte.
@@ -49,7 +48,7 @@ def process_line(dlgid, line):
     for field in fields[2:]:
         key, value = re.split('=', field)
         d[key] = value
-    bd.insert_data_line(dlgid, d)
+    bd.insert_data_line(d)
     return
 
 
@@ -65,10 +64,11 @@ def process_file(file):
     dirname, filename = os.path.split(file)
     LOG.log(module=__name__, function='process_file', level='SELECT', dlgid='PROC00', console=console, msg='file={}'.format(filename))
     dlgid, *res = re.split('_', filename)
-    bd.reset_datasource(dlgid)
+    bd = BD(modo=Config['MODO']['modo'], dlgid=dlgid)
     with open(file) as myfile:
         line = myfile.readline()
-        process_line(dlgid, line)
+        process_line( line, bd)
+    del bd
 
     # Muevo el archivo al backup.
     try:

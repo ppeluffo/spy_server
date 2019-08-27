@@ -48,8 +48,8 @@ class INIT_frame:
     def process(self):
         log(module=__name__, function='process', dlgid=self.dlgid, level='SELECT', msg='start' )
         # Leo toda la configuracion desde la BD en un dict.
-        bd = BD( Config['MODO']['modo'] )
-        dcnf = bd.read_dlg_conf( self.dlgid)
+        bd = BD( modo = Config['MODO']['modo'], dlgid = self.dlgid )
+        dcnf = bd.read_dlg_conf()
         if dcnf == {}:
             log(module=__name__, function='process', dlgid=self.dlgid, msg='ERROR: No hay datos en la BD')
             self.response = 'ERROR'
@@ -57,16 +57,16 @@ class INIT_frame:
             return
         
         # Proceso c/modulo
-        self.PV_process_conf_parametros_base(dcnf)
+        d = self.PV_process_conf_parametros_base(dcnf)
         self.PV_process_conf_parametros_analog(dcnf)
         self.PV_process_conf_parametros_digital(dcnf)
         self.PV_process_conf_parametros_counter(dcnf)
         self.PV_process_conf_parametros_doutput(dcnf)
-               
+
+        # Actualizo la BD con los datos.
         # Creo un registo inicialiado en la redis.
-        redis_db = Redis(self.dlgid)
-        redis_db.create_rcd()
-        
+        bd.bdr.update(self.dlgid,d)
+        redis_db = Redis(self.dlgid).create_rcd()
         self.send_response()
         return
     
@@ -90,8 +90,8 @@ class INIT_frame:
             self.response += self.confbase_bd.get_response_string( self.confbase_dlg )
             log(module=__name__, function='PV_process_conf_parametros_base', dlgid=self.dlgid, level='SELECT', msg='RSP=[{}]'.format(self.response))
         # Actualizo la BD con datos de init ( ipaddress, imei, uid ....) que trae el datalogger
-        self.confbase_dlg.update_bd()
-        return
+        d = self.confbase_dlg.get_data_for_update()
+        return d
     
     
     def PV_process_conf_parametros_analog(self, dcnf):

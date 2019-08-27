@@ -26,35 +26,35 @@ class BDGDA:
         return
 
 
-    def connect(self):
+    def connect(self, tag='GDA'):
         """
         Retorna True/False si es posible generar una conexion a la bd GDA
         """
-        if self.connected == True:
-            return (True)
+        if self.connected:
+            return True
 
         try:
             self.engine = create_engine(self.url)
         except Exception as err_var:
             self.connected = False
-            log(module=__name__, function='connect', msg='ERROR: GDA engine NOT created. ABORT !!')
-            log(module=__name__, function='connect', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='connect', msg='ERROR: {0} engine NOT created. ABORT !!'.format(tag))
+            log(module=__name__, function='connect', msg='EXCEPTION {}'.format(err_var))
             exit(1)
 
         try:
             self.conn = self.engine.connect()
             self.connected = True
-            return (True)
+            return True
         except Exception as err_var:
             self.connected = False
-            log(module=__name__, function='connect', msg='ERROR: GDA NOT connected. ABORT !!')
-            log(module=__name__, function='connect', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='connect', msg='ERROR: {0} NOT connected. ABORT !!'.format(tag))
+            log(module=__name__, function='connect', msg='EXCEPTION {}'.format(err_var))
             exit(1)
 
-        return (False)
+        return False
 
 
-    def read_conf_piloto(self, dlgid):
+    def read_piloto_conf(self, dlgid):
         '''
         Lee de la base GDA la configuracion de los pilotos para el datalogger dado.
         Retorna un diccionario con los datos.
@@ -79,8 +79,9 @@ class BDGDA:
         Los datos se ponene un un diccionario con key=parametro y este se retorna
 
         '''
-        if self.connect() == False:
-            log(module=__name__, function='read_conf_piloto', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
+        log(module=__name__, function='read_piloto_conf', dlgid=dlgid, level='SELECT', msg='start')
+        if not self.connect():
+            log(module=__name__, function='read_piloto_conf', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
             return False
 
         query = text("""SELECT spx_unidades_configuracion.nombre as 'canal', 
@@ -96,8 +97,8 @@ class BDGDA:
         try:
             rp = self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='read_conf_piloto', dlgid=dlgid, msg='ERROR: can\'t exec gda !!')
-            log(module=__name__, function='read_conf_piloto', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_piloto_conf', dlgid=dlgid, msg='ERROR: can\'t exec gda !!')
+            log(module=__name__, function='read_piloto_conf', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
             return (d)
 
         results = rp.fetchall()
@@ -109,7 +110,7 @@ class BDGDA:
         return (d)
 
 
-    def read_dlg_conf(self, dlgid):
+    def read_dlg_conf(self, dlgid, tag='GDA'):
         '''
         Leo la configuracion desde GDA
                 +----------+---------------+------------------------+----------+
@@ -126,8 +127,8 @@ class BDGDA:
         '''
         log(module=__name__, function='read_dlg_conf', dlgid=dlgid, level='SELECT', msg='start')
 
-        if self.connect() == False:
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
+        if not self.connect():
+            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
             return
 
         query = text("""SELECT spx_unidades_configuracion.nombre as 'canal', spx_configuracion_parametros.parametro, 
@@ -140,8 +141,9 @@ class BDGDA:
 
         try:
             rp = self.conn.execute(query)
-        except:
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: can\'t exec gda !!')
+        except Exception as err_var:
+            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: can\'t exec {0} !!'.format(tag))
+            log(module=__name__, function='read_dlg_conf', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
             return
 
         results = rp.fetchall()
@@ -151,15 +153,15 @@ class BDGDA:
             d[(canal, pname)] = value
             log(module=__name__, function='read_dlg_conf', dlgid=dlgid, level='SELECT', msg='BD conf: [{0}][{1}]=[{2}]'.format( canal, pname, d[(canal, pname)]))
 
-        return (d)
+        return d
 
 
-    def update(self, dlgid, d):
+    def update(self, dlgid, d, tag='GDA'):
 
         log(module=__name__, function='update', dlgid=dlgid, level='SELECT', msg='start' )
 
-        if self.connect() == False:
-            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
+        if not self.connect():
+            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
             return False
 
         # PASS1: Inserto frame en la tabla de INITS.
@@ -169,7 +171,7 @@ class BDGDA:
         try:
             self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: can\'t exec(1) gda !!')
+            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: can\'t exec(1) {0} !!'.format(tag))
             log(module=__name__, function='update', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
             return
 
@@ -182,7 +184,7 @@ class BDGDA:
             try:
                 self.conn.execute(query)
             except Exception as err_var:
-                log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: can\'t exec(2) gda !!')
+                log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: can\'t exec(2) {0} !!'.format(tag))
                 log(module=__name__, function='connect', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
                 return
 
@@ -191,15 +193,15 @@ class BDGDA:
         return
 
 
-    def process_commited_conf(self, dlgid):
+    def process_commited_conf(self, dlgid, tag='GDA'):
         '''
         :param dlgid:
         :return: valor del commited_conf de la BD o None en caso de errores
         '''
         log(module=__name__, function='process_commited_conf', dlgid=dlgid, level='SELECT', msg='start')
 
-        if self.connect() == False:
-            log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
+        if not self.connect():
+            log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
             return
 
         query = text("""SELECT value, configuracion_id FROM spx_configuracion_parametros WHERE parametro = 'COMMITED_CONF' 
@@ -209,7 +211,7 @@ class BDGDA:
         try:
             rp = self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='ERROR: can\'t exec gda !!')
+            log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='ERROR: can\'t exec {0} !!'.format(tag))
             log(module=__name__, function='process_commited_conf', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
             return
 
@@ -219,12 +221,12 @@ class BDGDA:
         return (cc)
 
 
-    def clear_commited_conf(self, dlgid):
+    def clear_commited_conf(self, dlgid, tag='GDA'):
 
         log(module=__name__, function='clear_commited_conf', dlgid=dlgid, level='SELECT', msg='start')
 
-        if self.connect() == False:
-            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
+        if not self.connect():
+            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='ERROR: can\'t connect {0}} !!'.format(tag))
             return
 
         query = text("""UPDATE spx_configuracion_parametros SET value = '0' WHERE parametro = 'COMMITED_CONF' 
@@ -234,16 +236,16 @@ class BDGDA:
         try:
             self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='ERROR: can\'t exec gda !!')
+            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='ERROR: can\'t exec {0} !!'.format(tag))
             log(module=__name__, function='clear_commited_conf', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
 
         return
 
 
-    def insert_data_line(self, dlgid, d):
+    def insert_data_line(self, dlgid, d, tag='GDA'):
 
-        if self.connect() == False:
-            log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
+        if not self.connect():
+            log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
             exit(0)
 
         for key in d:
@@ -266,10 +268,10 @@ class BDGDA:
         return
 
 
-    def insert_data_online(self, dlgid, d):
+    def insert_data_online(self, dlgid, d, tag='GDA'):
 
-        if self.connect() == False:
-            log(module=__name__, function='insert_data_online', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
+        if not self.connect():
+            log(module=__name__, function='insert_data_online', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
             return
 
         for key in d:
@@ -314,4 +316,53 @@ class BDGDA:
 
         return
 
+
+class BDGDA_TAHONA(BDGDA):
+
+    def __init__(self, modo='local'):
+
+        self.datasource = ''
+        self.engine = ''
+        self.conn = ''
+        self.connected = False
+
+        if modo == 'spymovil':
+            self.url = Config['BDATOS']['url_gda_tahona_spymovil']
+        elif modo == 'local':
+            self.url = Config['BDATOS']['url_gda_tahona_local']
+        return
+
+
+    def connect(self, tag='GDA_TAHONA'):
+        BDGDA.connect(self, tag=tag )
+
+
+    def read_conf_piloto(self, dlgid):
+         d = dict()
+         log(module=__name__, function='read_conf_piloto', dlgid=dlgid, msg='ERROR: can\'t exec gda_tahona !!')
+         return d
+
+
+    def read_dlg_conf(self, dlgid, tag='GDA_TAHONA'):
+        BDGDA.read_dlg_conf(self, dlgid, tag=tag)
+
+
+    def update(self, dlgid, d, tag='GDA_TAHONA'):
+        BDGDA.update(self, dlgid, d, tag=tag)
+
+
+    def process_commited_conf(self, dlgid, tag='GDA_TAHONA'):
+        BDGDA.process_commited_conf(self, dlgid, tag=tag)
+
+
+    def clear_commited_conf(self, dlgid, tag='GDA_TAHONA'):
+        BDGDA.clear_commited_conf(self, dlgid, tag=tag)
+
+
+    def insert_data_line(self, dlgid, d, tag='GDA_TAHONA'):
+        BDGDA.insert_data_line(self, dlgid, d, tag=tag)
+
+
+    def insert_data_online(self, dlgid, d, tag='GDA_TAHONA'):
+        BDGDA.insert_data_online(self, dlgid, d, tag=tag)
 

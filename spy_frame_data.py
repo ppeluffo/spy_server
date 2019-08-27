@@ -56,11 +56,11 @@ class DATA_frame:
         commited_conf fue 1, pongo un RESET.
         '''
         log(module=__name__, function='process_commited_conf', dlgid=self.dlgid, level='SELECT', msg='start')
-        bd = BD( Config['MODO']['modo'] )
-        commited_conf = bd.process_commited_conf(self.dlgid)
+        bd = BD( modo = Config['MODO']['modo'], dlgid=self.dlgid )
+        commited_conf = bd.process_commited_conf()
         if ( (commited_conf == 1) and ( 'RESET' not in self.response) ):
             self.response += 'RESET:'
-            bd.clear_commited_conf(self.dlgid)
+            bd.clear_commited_conf()
 
 
     def process(self):
@@ -106,4 +106,3 @@ class DATA_frame:
         # Envio la respuesta
         self.send_response()
         return
-            

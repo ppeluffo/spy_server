@@ -40,6 +40,8 @@ Host: www.spymovil.com
 import cgi
 from spy_channel_piloto import Piloto
 from spy_log import log
+from spy import Config
+from spy_bd_general import BD
 
 #------------------------------------------------------------------------------
 class IAUX0_frame:
@@ -47,18 +49,16 @@ class IAUX0_frame:
     
     def __init__(self ):
         # Inicializo guardando el query string y lo parseo
+        self.response = ''
         form = cgi.FieldStorage()
         self.dlgid = form.getfirst('DLGID', 'DLG_ERR')
-        self.plt_dlg = Piloto(self.dlgid)
-        self.plt_dlg.init_from_qs()
-        log(module=__name__, function='__init__', dlgid=self.dlgid, msg='dlg {0}'.format(self.plt_dlg))
         return
     
     
-    def send_response(self, response ):
-        log(module=__name__, function='send_response', dlgid=self.dlgid, msg='RSP={0}'.format(response))
+    def send_response(self ):
+        log(module=__name__, function='send_response', dlgid=self.dlgid, msg='RSP={0}'.format(self.response))
         print('Content-type: text/html\n')
-        print('<html><body><h1>%s</h1></body></html>' % (response))
+        print('<html><body><h1>%s</h1></body></html>' % (self.response))
    
        
     def process(self):
@@ -72,27 +72,42 @@ class IAUX0_frame:
         Para esto hice un overload de metodo __eq__ invocado por el operador ==.
         Tambien hice un overload del metodo __str__ usado por el print.
         '''
-        # Creo un nuevo piloto
-        self.plt_bd = Piloto(self.dlgid)
-        # Con los datos de la BD.
-        if self.plt_bd.init_from_bd( self.dlgid ) == True:
-            log(module=__name__, function='process', dlgid=self.dlgid, msg='bd {0}'.format(self.plt_bd))
-        else:
-            log(module=__name__, function='process', dlgid=self.dlgid, msg='BD PILOTO ERROR !!')
-            self.send_response('ERROR')
+        log(module=__name__, function='process', dlgid=self.dlgid, level='SELECT', msg='start' )
+        # Leo toda la configuracion desde la BD en un dict.
+        bd = BD( modo = Config['MODO']['modo'], dlgid = self.dlgid )
+        dplt = bd.read_piloto_conf()
+        if dplt == {}:
+            log(module=__name__, function='process', dlgid=self.dlgid, msg='ERROR: No hay datos en la BD')
+            self.response = 'ERROR'
+            self.send_response()
             return
-        
+
+        self.PV_process_conf_piloto(dplt)
+        self.send_response()
+        return
+
+
+    def PV_process_conf_piloto(self,dplt):
+        log(module=__name__, function='PV_process_conf_piloto', dlgid=self.dlgid, level='SELECT', msg='start')
+
+        self.plt_dlg = Piloto(self.dlgid)
+        self.plt_dlg.init_from_qs()
+        self.plt_dlg.log(tag='dlgconf')
+
+        self.plt_bd = Piloto(self.dlgid)
+        self.plt_bd.init_from_qs()
+        self.plt_bd.log(tag='bdconf')
+
         # Comparo la configuracion que trae el dlg y la de la bd y repondo al datalogger
         response = ''
         if self.plt_dlg == self.plt_bd:
-            log(module=__name__, function='process', dlgid=self.dlgid, msg='plt BDconf eq DLGconf')
-            response = 'PLT_OK'
+            log(module=__name__, function='PV_process_conf_piloto', dlgid=self.dlgid, level='SELECT',msg='Conf PLT: BD eq DLG')
+            self.response = 'PLT_OK'
         else:
-            log(module=__name__, function='process', dlgid=self.dlgid, msg='plt BDconf ne DLGconf')
-            response = self.plt_bd.get_response_string()
-            
-        self.send_response(response)
-        return  
+            log(module=__name__, function='PV_process_conf_piloto', dlgid=self.dlgid, level='SELECT',msg='Conf PLT: BD ne DLG')
+            self.response = self.plt_bd.get_response_string()
+        return
+
     
     
     

@@ -57,7 +57,10 @@ class Redis():
     def insert_line(self, line):
         '''
         Inserto la ultima linea de datos en la redis
+        Debo agregar un TAG de la forma 100&LINE= para que los scripts de Yosniel puedan parsearlo
         '''
+        TAG = 'LINE='
+        line = TAG + line
         if self.connected:
             try:
                 self.rh.hset( self.dlgid, 'LINE', line )

@@ -73,7 +73,10 @@ class Piloto:
         self.slot4 = ( int(d.get('HHMM_4','00')), float(d.get('POUT_4','1')))
         return True
   
-      
+    def log ( self, tag = ''):
+        log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} {1}'.format(tag, self.__str__()))
+        return
+
     def __str__(self):
         response = 'PILOTO: dlgid=%s, pband=%s, psteps=%s ' % ( self.dlgid, self.pband, self.psteps )
         response += 'S0=%s,%s ' % ( self.slot0[0], self.slot0[1])

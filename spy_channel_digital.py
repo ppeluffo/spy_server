@@ -7,7 +7,6 @@ Created on Thu Aug  8 08:05:36 2019
 """
 
 import cgi
-import logging
 import re
 from spy_log import log
 
@@ -37,6 +36,8 @@ class DigitalChannel():
             except Exception as err_var:
                 log(module=__name__, function='init_from_qs', level='INFO', dlgid=self.dlgid, msg='ERROR: {0}_unpack {1}'.format(ch_id, field))
                 log(module=__name__, function='init_from_qs', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+                self.name = 'X'
+                self.tpoll = 0
         return
 
     
@@ -50,7 +51,7 @@ class DigitalChannel():
         '''
         CH = self.id
         self.name = dcnf.get((CH,'NAME'),'X')
-        self.tpoll = float(dcnf.get((CH,'TPOLL'),0))
+        self.tpoll = int(dcnf.get((CH,'TPOLL'),0))
         return
     
     def __eq__(self, other ):

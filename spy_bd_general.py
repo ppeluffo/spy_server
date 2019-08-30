@@ -15,6 +15,7 @@ class BD:
     def __init__ (self, dlgid, modo = 'local'):
         self.modo = modo
         self.dlgid = dlgid
+        self.bdr = ''
 
         bd = BDSPY(self.modo)
         self.datasource = bd.find_data_source(self.dlgid)
@@ -96,8 +97,10 @@ class BD:
 
 
     def insert_data_line(self,d):
-
         self.bdr.insert_data_line(self.dlgid, d)
-        self.bdr.insert_data_online(self.dlgid, d)
         return
 
+
+    def insert_data_online(self,d):
+        self.bdr.insert_data_online(self.dlgid, d)
+        return

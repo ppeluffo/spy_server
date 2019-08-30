@@ -49,6 +49,7 @@ def process_line( line, bd):
         key, value = re.split('=', field)
         d[key] = value
     bd.insert_data_line(d)
+    bd.insert_data_online(d)
     return
 
 

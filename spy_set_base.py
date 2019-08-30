@@ -26,7 +26,6 @@ class Confbase:
     imei
     version
     uid
-    ...
     '''
     def __init__(self, dlgid):
         self.dlgid = dlgid
@@ -49,16 +48,24 @@ class Confbase:
         '''
         Recibo un query string que lo parseo y relleno los campos del piloto
         getvalue retorna None si no hay nada
+        DLGID=TEST01&SIMPWD=DEFAULT&IMEI=860585004331632&VER=2.0.5&UID=304632333433180f000500&SIMID=895980161233135446
+        &INIT&TPOLL=300&TDIAL=600
+        &PWRS=ON,2130,0630
+        &CSQ=93&WRST=0x34
+        &DIST=ON
+
+        De todos estos parametros, importa que el PWRS viene del datalogger con ON u OFF
+        Lo mismo con DIST: ON u OFF
         '''
         form = cgi.FieldStorage()
-        self.imei = form.getfirst('IMEI', '0')
+        self.imei = form.getfirst('IMEI', '0')              # &IMEI=860585004331632
         self.ver = form.getfirst('VER', '0')
         self.uid = form.getfirst('UID','0')
-        self.simid = form.getfirst('SIMID', '0')
-        self.tpoll = int(form.getfirst('TPOLL', '0'))
+        self.simid = form.getfirst('SIMID', '0')            # &SIMID=895980161233135446
+        self.tpoll = int(form.getfirst('TPOLL', '0'))       # &TPOLL=300&TDIAL=600
         self.tdial = int(form.getfirst('TDIAL', '0'))
         try:
-            self.pwrs_modo, self.pwrs_start, self.pwrs_end = re.split('=|,', form.getfirst('PWRS','OFF,00,00'))
+            self.pwrs_modo, self.pwrs_start, self.pwrs_end = re.split('=|,', form.getfirst('PWRS','OFF,00,00'))     # &PWRS=ON,2130,0630
             self.pwrs_start = int(self.pwrs_start)
             self.pwrs_end = int(self.pwrs_end)
         except Exception as err_var:
@@ -67,7 +74,7 @@ class Confbase:
 
         self.csq = form.getfirst('CSQ', '0')
         self.wrst = form.getfirst('WRST', '0')
-        self.dist = form.getfirst('DIST', 'OFF')
+        self.dist = form.getfirst('DIST', 'OFF')    # &DIST=ON
         return
 
 
@@ -105,11 +112,17 @@ class Confbase:
         # Convierto el dict a la estructura Cbase
         self.tpoll = int(dcnf.get(('BASE','TPOLL'), 0))
         self.tdial = int(dcnf.get(('BASE','TDIAL'),0))
+
+        # GDA y BDOSE guardan PWR_SAVE_MODO como 0(off) o 1(on)
+        # Convierto a OFF/ON para comparar contra lo que manda el QS.
         self.pwrs_modo = int(dcnf.get(('BASE','PWRS_MODO'),0))
         if self.pwrs_modo == 0:
             self.pwrs_modo = 'OFF'
         else:
             self.pwrs_modo = 'ON'
+
+        # En GDA vienen como enteros
+        # En BDOSE como time pero al leerlos los converti a enteros.
         self.pwrs_start = int(dcnf.get(('BASE','PWRS_HHMM1'),0))
         self.pwrs_end = int(dcnf.get(('BASE','PWRS_HHMM2'),0))
         
@@ -119,6 +132,10 @@ class Confbase:
         self.uid = dcnf.get(('BASE','UID'),0)
         self.csq = ''
         self.wrst = ''
+
+        # GDA guarda DIST como 0(off) o 1(on)
+        # BDOSE no lo guarda por lo que el default que tomo es 0.
+        # Convierto a OFF/ON para comparar contra lo que manda el QS.
         self.dist =  int(dcnf.get(('BASE','DIST'),0))
         if self.dist == 0:
             self.dist = 'OFF'

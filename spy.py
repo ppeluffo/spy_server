@@ -44,7 +44,7 @@ import os
 #import cgitb
 import configparser
 import sys
-import spy_log as LOG
+from spy_log import *
 
 #----------------------------------------------------------------------------- 
 #cgitb.enable()
@@ -57,7 +57,7 @@ Config.read('spy.conf')
 if __name__ == '__main__':
    
     # Lo primero es configurar el logger   
-    LOG.config_logger()
+    config_logger()
  
     query_string = ''
     # Atajo para debugear x consola ( no cgi )!!!
@@ -90,7 +90,9 @@ if __name__ == '__main__':
         # Leo del cgi
         query_string = os.environ.get('QUERY_STRING')
 
-    LOG.log(module=__name__, function='__init__', level='INFO', msg='RX:[{}]'.format(query_string))
+    log(module=__name__, function='__init__', level='INFO', msg='RX:[{}]'.format(query_string))
+
+    #exit(0)
 
     # Procesamiento normal x cgi.
     if 'SCAN' in query_string:

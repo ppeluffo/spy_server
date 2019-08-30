@@ -78,7 +78,7 @@ class IAUX0_frame:
         dplt = bd.read_piloto_conf()
         if dplt == {}:
             log(module=__name__, function='process', dlgid=self.dlgid, msg='ERROR: No hay datos en la BD')
-            self.response = 'ERROR'
+            self.response = 'SRV_ERR'
             self.send_response()
             return
 
@@ -95,7 +95,7 @@ class IAUX0_frame:
         self.plt_dlg.log(tag='dlgconf')
 
         self.plt_bd = Piloto(self.dlgid)
-        self.plt_bd.init_from_qs()
+        self.plt_bd.init_from_bd(dplt)
         self.plt_bd.log(tag='bdconf')
 
         # Comparo la configuracion que trae el dlg y la de la bd y repondo al datalogger

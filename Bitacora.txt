@@ -1,25 +1,7 @@
 PENDIENTES:
-    - Usar polimorfismo y herencia.
-    - Manejar las diferentes versiones/protocolos/BD para c/frame.
-  
-4) Hacer modulo de init
-    - Ver diferentes protocolos
-    - Ver diferentes BDatos ( GDA )
-5)  Herencia y polimorfismo
-6)  Debug desde consola tomando datos de archivo ( frames y tipo)    
-7) Agarrar errores en el archivo CONFIG
 
-Planilla de opciones de testing
-Testing modo consola
-Testing cgi
-     
-        
-Protocolo de Testing:
-SCAN:
-Es un frame que el datalogger manda cuando
-Test Local modo Consola:
-- Corremos el programa ./spy.py DEBUG_SCAN y modificamos el archivo spy.conf
-  para probar varias opciones del SCAN.
-  1- 
+2-Testing con BD_OSE / BD_TAHONA . Ojo el datasource.
+3-BDUTE
+
 
 

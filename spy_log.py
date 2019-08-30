@@ -10,6 +10,7 @@ import logging
 import logging.handlers
 import ast
 from spy import Config
+#import spy
 
 def config_logger():
     # logging.basicConfig(filename='log1.log', filemode='a', format='%(asctime)s %(name)s %(levelname)s %(message)s', level = logging.DEBUG, datefmt = '%d/%m/%Y %H:%M:%S' )
@@ -29,7 +30,7 @@ def config_logger():
     # Creo ahora un logger child local.
     LOG = logging.getLogger('spy')
     LOG.addHandler(handler)
-    return LOG
+    #return LOG
 
 # ------------------------------------------------------------------------------
 
@@ -39,7 +40,8 @@ def log(module,function, msg='', dlgid='00000', console=False, level='INFO'):
     Si el level es SELECT, dependiendo del dlgid se muestra o no
     Si console es ON se hace un print del mensaje
     '''
-    list_dlg = ast.literal_eval(Config['SELECT']['list_dlg'])
+    dlg_list = Config['SELECT']['list_dlg']
+    list_dlg = ast.literal_eval( dlg_list )
 
     if level == 'SELECT':
         if dlgid in list_dlg:
@@ -58,5 +60,5 @@ def log(module,function, msg='', dlgid='00000', console=False, level='INFO'):
 
 
 if __name__ == '__main__':
-    from spy import Config
+    #from spy import Config
     list_dlg = ast.literal_eval(Config['SELECT']['list_dlg'])

@@ -33,7 +33,7 @@ class BDOSE_PQ:
         Retorna True/False si es posible generar una conexion a la bd OSE
         """
         if self.connected:
-            return True
+            return self.connected
 
         try:
             self.engine = create_engine(self.url)
@@ -46,22 +46,21 @@ class BDOSE_PQ:
         try:
             self.conn = self.engine.connect()
             self.connected = True
-            return True
         except Exception as err_var:
             self.connected = False
             log(module=__name__, function='connect', msg='ERROR: BDOSE {0} NOT connected. ABORT !!'.format(tag))
             log(module=__name__, function='connect', msg='EXCEPTION {}'.format(err_var))
             exit(1)
 
-        return False
+        return self.connected
 
 
     def read_dlg_conf(self, dlgid, tag='PQ'):
 
-        log(module=__name__, function='read_dlg_conf', dlgid=dlgid, level='SELECT', msg='start')
+        log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, level='SELECT', msg='start')
 
         if not self.connect():
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: BDOSE {0} can\'t connect !!'.format(tag))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: BDOSE {0} can\'t connect !!'.format(tag))
             return
 
         query = text("""SELECT timerPoll, timerDial,c0_name, c0_eRange, c0_minValue,c0_maxValue,c0_mag,\
@@ -71,8 +70,8 @@ class BDOSE_PQ:
         try:
             rp = self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: BDOSE can\'t exec {0} !!'.format(tag))
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: BDOSE can\'t exec {0} !!'.format(tag))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
             return
 
         result = rp.first()
@@ -82,11 +81,12 @@ class BDOSE_PQ:
         # Canales analogicos: C0=>A0,C1=>A1, C2=>A2
         # CO=>A0
         d[('A0', 'NAME')] = result[2]
+        # el imin,imax vienen el Ax_Range con el formato 0-20mA. Debo parsear.
         try:
             imin, imax, *r = re.split('-|mA', result[3])
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: split {}'.format(result[3]))
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[3]))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
             imin, imax = 0, 0
 
         d[('A0', 'IMIN')] = imin
@@ -98,8 +98,8 @@ class BDOSE_PQ:
         try:
             imin, imax, *r = re.split('-|mA', result[8])
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: split {}'.format(result[8]))
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[8]))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
             imin, imax = 0, 0
 
         d[('A1', 'IMIN')] = imin
@@ -111,8 +111,8 @@ class BDOSE_PQ:
         try:
             imin, imax, *r = re.split('-|mA', result[13])
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: split {}'.format(result[13]))
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[13]))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
             imin, imax = 0, 0
         d[('A2', 'IMIN')] = imin
         d[('A2', 'IMAX')] = imax
@@ -125,70 +125,73 @@ class BDOSE_PQ:
         try:
            r, magpp = re.split('-', result[18])
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: split {}'.format(result[18]))
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[18]))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
             magpp = 0
         d[('C0', 'MAGPP')] = magpp
+        d[('C0', 'PERIOD')] = 100       # Campos de relleno
+        d[('C0', 'PWIDTH')] = 100
+        d[('C0', 'SPEED')] = 'LS'
 
         # C4 => C1
         d[('C1', 'NAME')] = result[22]
         try:
             r, magpp = re.split('-', result[23])
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: split {}'.format(result[23]))
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[23]))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
             magpp = 0
         d[('C1', 'MAGPP')] = magpp
+        d[('C1', 'PERIOD')] = 100       # Campos de relleno
+        d[('C1', 'PWIDTH')] = 100
+        d[('C1', 'SPEED')] = 'LS'
 
         # CONSIGNAS:
+        # PQ no tiene el parametro DOUTPUTS por lo cual debo ponerlo por default
         # Hay que adecuar los formatos de HHMM
         cons_enabled = result[27]
-        if cons_enabled == 0:
-            d[('CONS', 'ENABLED')] = magpp = 'OFF'
+        if cons_enabled == 0:   # disabled
+            d[('DOUTPUTS', 'MODO')] = 'OFF'
         else:
-            d[('CONS', 'ENABLED')] = magpp = 'ON'
+            d[('DOUTPUTS', 'MODO')] = 'CONS'
 
         try:
             hh, mm, *r = re.split(':', str(result[28]))
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: split {}'.format(result[28]))
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[28]))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
             hh, mm = 0, 0
-        d[('CONS', 'HHMM1')] = '%s%s' % (hh, mm)
+        d[('CONS', 'HHMM1')] = '{0}{1}'.format(hh, mm)
 
         try:
             hh, mm, *r = re.split(':', str(result[29]))
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: split {}'.format(result[29]))
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[29]))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
             hh, mm = 0, 0
-        d[('CONS', 'HHMM2')] = '%s%s' % (hh, mm)
+        d[('CONS', 'HHMM2')] = '{0}{1}'.format(hh, mm)
 
         # PWRSAVE
+        # BDOSE guarda pwr_save como 0(off) o 1(on). No lo convierto aqui. Lo hago en base.
         pwr_save_modo = result[30]
-        if pwr_save_modo == 0:
-            pwr_save_modo = 'OFF'
-        else:
-            pwr_save_modo = 'ON'
         d[('BASE', 'PWRS_MODO')] = pwr_save_modo
-
         # result15,16 son timedelta por lo tanto los separo en su representacion str.
-        # split me devuleve strings por lo que uso %s%s.
+        # split me devuelve strings por lo que uso %s%s.
         try:
             hh, mm, *r = re.split(':', str(result[31]))
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: split {}'.format(result[31]))
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[31]))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
             hh, mm = 0, 0
-        d[('BASE', 'PWRS_HHMM1')] = '%s%s' % (hh, mm)
+        d[('BASE', 'PWRS_HHMM1')] = '{0}{1}'.format (hh, mm)
 
         try:
             hh, mm, *r = re.split(':', str(result[32]))
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: split {}'.format(result[32]))
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[32]))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
             hh, mm = 0, 0
-        d[('BASE', 'PWRS_HHMM2')] = '%s%s' % (hh, mm)
+        d[('BASE', 'PWRS_HHMM2')] = '{0}{1}'.format (hh, mm)
 
         return (d)
 
@@ -307,7 +310,8 @@ class BDOSE_PQ:
             log(module=__name__, function='insert_data_online', dlgid=dlgid, msg='QUERY {}'.format(query))
             log(module=__name__, function='insert_data_online', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
 
-        delquery = text('')
+        delquery = text("""DELETE FROM PQ_tbDatosOnline WHERE dlgId = '{0}' AND  pkDatos NOT IN ( SELECT * FROM ( SELECT pkDatos FROM PQ_tbDatosOnline WHERE dlgId = '{0}' \
+        ORDER BY fechaData DESC LIMIT 1) AS temp )""".format(dlgid))
         try:
             self.conn.execute(delquery)
         except Exception as err_var:
@@ -317,21 +321,21 @@ class BDOSE_PQ:
         return
 
 
-class BDOSE_PZ(BDOSE_PQ):
+class BDOSE_PZ (BDOSE_PQ):
 
     def connect(self, tag='PZ'):
-        BDOSE_PQ.connect(self, tag=tag )
+        return BDOSE_PQ.connect(self, tag=tag )
 
 
     def read_dlg_conf(self, dlgid, tag='PZ'):
-
-        log(module=__name__, function='read_dlg_conf', dlgid=dlgid, level='SELECT', msg='start')
+        #Los pozos deben tener predido el DIST=ON solamente.
+        log(module=__name__, function='read_dlg_conf PZ', dlgid=dlgid, level='SELECT', msg='start')
 
         if not self.connect():
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
+            log(module=__name__, function='read_dlg_conf PZ', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
             return
 
-        query = text("SELECT timerPoll FROM PZ_tbUnidades WHERE dlgid = '%s'".format(dlgid))
+        query = text("SELECT timerPoll FROM PZ_tbUnidades WHERE dlgid = '{0}'".format(dlgid))
         try:
             rp = self.conn.execute(query)
         except Exception as err_var:
@@ -341,22 +345,21 @@ class BDOSE_PZ(BDOSE_PQ):
 
         result = rp.first()
         d = defaultdict(dict)
-        d[('BASE', 'DIST')] = 'ON'
-        d[('BASE', 'TPOLL')] = result
-        LOG.info('[%s] BD conf: [BASE][TPOLL]=[%s]' % (dlgid, d[('BASE', 'TPOLL')]))
+        d[('BASE', 'DIST')] = 1
+        d[('BASE', 'TPOLL')] = result[0]
         return d
 
 
     def update(self, dlgid, d, tag='PZ'):
-        BDOSE_PQ.update(self, dlgid, d, tag=tag)
+        return BDOSE_PQ.update(self, dlgid, d, tag=tag)
 
 
     def process_commited_conf(self, dlgid, tag='PZ'):
-        BDOSE_PQ.process_commited_conf(self, dlgid, tag=tag)
+        return BDOSE_PQ.process_commited_conf(self, dlgid, tag=tag)
 
 
     def clear_commited_conf(self, dlgid, tag='PZ'):
-        BDOSE_PQ.clear_commited_conf(self, dlgid, tag=tag)
+        return BDOSE_PQ.clear_commited_conf(self, dlgid, tag=tag)
 
 
     def insert_data_line(self, dlgid, d, tag='PZ'):
@@ -397,7 +400,8 @@ class BDOSE_PZ(BDOSE_PQ):
             log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='QUERY {}'.format(query))
             log(module=__name__, function='insert_data_line', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
 
-        delquery = text('')
+        delquery = text("""DELETE FROM PZ_tbDatosOnline WHERE pozoId = '{0}' AND  pkDatos NOT IN ( SELECT * FROM ( SELECT pkDatos FROM PZ_tbDatosOnline WHERE pozoId = '{0}' \
+        ORDER BY fechaData DESC LIMIT 1) AS temp )""".format(dlgid))
         try:
             self.conn.execute(delquery)
         except Exception as err_var:
@@ -407,18 +411,19 @@ class BDOSE_PZ(BDOSE_PQ):
         return
 
 
-class BDOSE_TQ(BDOSE_PQ):
+class BDOSE_TQ (BDOSE_PQ):
+
 
     def connect(self, tag='TQ'):
-        BDOSE_PQ.connect(self, tag=tag )
+        return BDOSE_PQ.connect(self, tag=tag )
 
 
-    def read_dlg_conf_TQ(self, dlgid, tag='TQ'):
+    def read_dlg_conf(self, dlgid, tag='TQ'):
 
-        log(module=__name__, function='read_dlg_conf', dlgid=dlgid, level='SELECT', msg='start')
+        log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, level='SELECT', msg='start')
 
         if not self.connect():
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
+            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
             return
 
         query = text("""SELECT timerPoll,timerDial,c0_name,c0_eRange,c0_minValue,c0_maxValue,c1_name,c1_eRange,\
@@ -428,8 +433,8 @@ class BDOSE_TQ(BDOSE_PQ):
         try:
             rp = self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: can\'t exec {0} !!'.format(tag))
-            log(module=__name__, function='read_dlg_conf', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: can\'t exec {0} !!'.format(tag))
+            log(module=__name__, function='read_dlg_conf TQ', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
             return
 
         result = rp.first()
@@ -479,46 +484,43 @@ class BDOSE_TQ(BDOSE_PQ):
         d[('A2', 'MMIN')] = result[12]
         d[('A2', 'MMAX')] = result[13]
 
+        # BDOSE guarda pwr_save como 0(off) o 1(on). No lo convierto aqui. Lo hago en base.
         pwr_save_modo = result[14]
-        if pwr_save_modo == 0:
-            pwr_save_modo = 'OFF'
-        else:
-            pwr_save_modo = 'ON'
         d[('BASE', 'PWRS_MODO')] = pwr_save_modo
 
         # result15,16 son timedelta por lo tanto los separo en su representacion str.
-        # split me devuleve strings por lo que uso %s%s.
+        # split me devuelve strings por lo que uso %s%s.
         try:
             hh, mm, *r = re.split(':', str(result[15]))
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[15]))
             log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
             hh, mm = 0, 0
-
-        d[('BASE', 'PWRS_HHMM1')] = '%s%s' % (hh, mm)
-
+        d[('BASE', 'PWRS_HHMM1')] = '{0}{1}'.format (hh, mm)
         try:
             hh, mm, *r = re.split(':', str(result[16]))
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[16]))
             log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
             hh, mm = 0, 0
+        d[('BASE', 'PWRS_HHMM2')] = '{0}{1}'.format (hh, mm)
 
-        d[('BASE', 'PWRS_HHMM2')] = '%s%s' % (hh, mm)
+        for key in d:
+            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='DEBUG key={0}, val={1}'.format(key,d[key]))
 
         return d
 
 
     def update(self, dlgid, d, tag='TQ'):
-        BDOSE_PQ.update(self, dlgid, d, tag=tag)
+        return BDOSE_PQ.update(self, dlgid, d, tag=tag)
 
 
     def process_commited_conf(self, dlgid, tag='TQ'):
-        BDOSE_PQ.process_commited_conf(self, dlgid, tag=tag)
+        return BDOSE_PQ.process_commited_conf(self, dlgid, tag=tag)
 
 
     def clear_commited_conf(self, dlgid, tag='TQ'):
-        BDOSE_PQ.clear_commited_conf(self, dlgid, tag=tag)
+        return BDOSE_PQ.clear_commited_conf(self, dlgid, tag=tag)
 
 
     def insert_data_line(self, dlgid, d, tag='TQ'):
@@ -559,7 +561,8 @@ class BDOSE_TQ(BDOSE_PQ):
             log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='QUERY {}'.format(query))
             log(module=__name__, function='insert_data_line', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
 
-        delquery = text('')
+        delquery = text("""DELETE FROM TQ_tbDatosOnline WHERE tanqueId = '{0}' AND  pkDatos NOT IN ( SELECT * FROM ( SELECT pkDatos FROM TQ_tbDatosOnline WHERE tanqueId = '{0}' \
+        ORDER BY fechaData DESC LIMIT 1) AS temp )""".format(dlgid))
         try:
             self.conn.execute(delquery)
         except Exception as err_var:

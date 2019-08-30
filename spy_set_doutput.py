@@ -21,23 +21,24 @@ class Confdoutput:
     
     def __init__(self, dlgid):
         self.dlgid = dlgid
-        self.douts = 'None'
+        self.douts = 'OFF'
         self.consigna_dia_hhmm = ''
         self.consigna_noche_hhmm = ''
         return
- 
+
+
     def init_from_qs(self):
         '''
-        qs es el string parseado tipo &DOUTS=CONS{PERF}{PLT}
+        qs es el string parseado tipo &DOUTPUTS=CONS{PERF}{PLT}
         Primero vemos que no sea vacio.
         Luego lo parseamos y rellenamos los campos del self.
         Si el modo es CONS, entonces viene otra parametro que es CONS
         '''
         form = cgi.FieldStorage()
-        self.douts = form.getfirst('DOUTS','None')
+        self.douts = form.getfirst('DOUTPUTS','OFF')
         if self.douts == 'CONS':
             try:
-                self.consigna_dia_hhmm, self.consigna_noche_hhmm = re.split('=|,', form.getvalue('CONS'))   
+                self.consigna_dia_hhmm, self.consigna_noche_hhmm = re.split('=|,', form.getvalue('CONS'))
                 self.consigna_dia_hhmm = int( self.consigna_dia_hhmm)
                 self.consigna_noche_hhmm = int( self.consigna_noche_hhmm)
             except Exception as err_var:
@@ -45,25 +46,26 @@ class Confdoutput:
                 log(module=__name__, function='init_from_qs',dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
         return
 
+
     def log(self, tag='' ):
         log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} douts={1}'.format( tag, self.douts))
         if self.douts == 'CONS':
             log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} cons_dia_hhmm={1}'.format(tag, self.consigna_dia_hhmm))
             log(module=__name__, function='log', level='SELECT', dlgid=self.dlgid, msg='{0} cons_noche_hhmm={1}'.format(tag, self.consigna_noche_hhmm))
         return
-               
+
+
     def init_from_bd( self, dcnf ):
         '''
         Leo la configuracion base del dlgid desde la base de datos y relleno la estructura self.
         La base de datos ya esta leida y los valores pasados en el dcnf.
         '''
-        self.douts = dcnf.get(('DOUTPUTS','MODO'), 'None')
+        self.douts = dcnf.get(('DOUTPUTS','MODO'), 'OFF')
         if self.douts == 'CONS':
             self.consigna_dia_hhmm = int(dcnf.get(('CONS','HHMM1'),0))
             self.consigna_noche_hhmm = int(dcnf.get(('CONS','HHMM2'),0))
         return
 
-    def __eq__(self, other ):
         '''
         Overload de la comparacion donde solo comparo los elementos necesarios
         '''
@@ -79,6 +81,7 @@ class Confdoutput:
         
         else:
             return False
+
 
     def get_response_string(self, other ):
         '''

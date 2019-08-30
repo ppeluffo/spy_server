@@ -48,29 +48,17 @@ class Piloto:
         self.slot3 = self.pv_parseSlotField( form.getfirst('S3', ('03', '1')))
         self.slot4 = self.pv_parseSlotField( form.getfirst('S4', ('04', '1')))
         return
-  
-        
-    def init_from_bd( self, dlgid ):
-        '''
-        Leo la configuracion de pilotos del dlgid y relleno la estructura self.
-        '''
-        bd = BDGDA( Config['MODO']['modo'] )
-         # Leo la configuracion en un dict.
-        d = bd.read_conf_piloto(dlgid)
-        # Controlo que hallan datos.
-        if d == {}:
-            log(module=__name__, function='init_from_bd', dlgid=dlgid, msg='ERROR: No hay datos en la bd')
-            return False
-        
+
+    def init_from_bd(self, dcnf):
+
         # Convierto el dict a la estructura Piloto
-        self.dlgid = dlgid
-        self.pband = float(d.get('PBAND', '0.2'))
-        self.psteps = int(d.get('PSTEPS','6'))
-        self.slot0 = ( int(d.get('HHMM_0','00')), float(d.get('POUT_0','1')))
-        self.slot1 = ( int(d.get('HHMM_1','00')), float(d.get('POUT_1','1')))
-        self.slot2 = ( int(d.get('HHMM_2','00')), float(d.get('POUT_2','1')))
-        self.slot3 = ( int(d.get('HHMM_3','00')), float(d.get('POUT_3','1')))
-        self.slot4 = ( int(d.get('HHMM_4','00')), float(d.get('POUT_4','1')))
+        self.pband = float(dcnf.get('PBAND', '0.2'))
+        self.psteps = int(dcnf.get('PSTEPS','6'))
+        self.slot0 = ( int(dcnf.get('HHMM_0','00')), float(dcnf.get('POUT_0','1')))
+        self.slot1 = ( int(dcnf.get('HHMM_1','00')), float(dcnf.get('POUT_1','1')))
+        self.slot2 = ( int(dcnf.get('HHMM_2','00')), float(dcnf.get('POUT_2','1')))
+        self.slot3 = ( int(dcnf.get('HHMM_3','00')), float(dcnf.get('POUT_3','1')))
+        self.slot4 = ( int(dcnf.get('HHMM_4','00')), float(dcnf.get('POUT_4','1')))
         return True
   
     def log ( self, tag = ''):

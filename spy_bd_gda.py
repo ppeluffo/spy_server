@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/python3 -u
 """
 Modulo de trabajo con la BD GDA
 """
@@ -31,7 +31,7 @@ class BDGDA:
         Retorna True/False si es posible generar una conexion a la bd GDA
         """
         if self.connected:
-            return True
+            return self.connected
 
         try:
             self.engine = create_engine(self.url)
@@ -44,14 +44,13 @@ class BDGDA:
         try:
             self.conn = self.engine.connect()
             self.connected = True
-            return True
         except Exception as err_var:
             self.connected = False
             log(module=__name__, function='connect', msg='ERROR: {0} NOT connected. ABORT !!'.format(tag))
             log(module=__name__, function='connect', msg='EXCEPTION {}'.format(err_var))
             exit(1)
 
-        return False
+        return self.connected
 
 
     def read_piloto_conf(self, dlgid):
@@ -127,7 +126,7 @@ class BDGDA:
         '''
         log(module=__name__, function='read_dlg_conf', dlgid=dlgid, level='SELECT', msg='start')
 
-        if not self.connect():
+        if not self.connect(tag):
             log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
             return
 
@@ -334,7 +333,7 @@ class BDGDA_TAHONA(BDGDA):
 
 
     def connect(self, tag='GDA_TAHONA'):
-        BDGDA.connect(self, tag=tag )
+        return BDGDA.connect(self, tag=tag )
 
 
     def read_conf_piloto(self, dlgid):
@@ -344,25 +343,30 @@ class BDGDA_TAHONA(BDGDA):
 
 
     def read_dlg_conf(self, dlgid, tag='GDA_TAHONA'):
-        BDGDA.read_dlg_conf(self, dlgid, tag=tag)
+        return BDGDA.read_dlg_conf(self, dlgid, tag=tag)
 
 
     def update(self, dlgid, d, tag='GDA_TAHONA'):
-        BDGDA.update(self, dlgid, d, tag=tag)
+        return BDGDA.update(self, dlgid, d, tag=tag)
 
 
     def process_commited_conf(self, dlgid, tag='GDA_TAHONA'):
-        BDGDA.process_commited_conf(self, dlgid, tag=tag)
+        return BDGDA.process_commited_conf(self, dlgid, tag=tag)
 
 
     def clear_commited_conf(self, dlgid, tag='GDA_TAHONA'):
-        BDGDA.clear_commited_conf(self, dlgid, tag=tag)
+        return BDGDA.clear_commited_conf(self, dlgid, tag=tag)
 
 
     def insert_data_line(self, dlgid, d, tag='GDA_TAHONA'):
-        BDGDA.insert_data_line(self, dlgid, d, tag=tag)
+        return BDGDA.insert_data_line(self, dlgid, d, tag=tag)
 
 
     def insert_data_online(self, dlgid, d, tag='GDA_TAHONA'):
-        BDGDA.insert_data_online(self, dlgid, d, tag=tag)
+        return BDGDA.insert_data_online(self, dlgid, d, tag=tag)
 
+
+if __name__ == '__main__':
+    bd = BDGDA_TAHONA()
+    res = bd.connect('TH')
+    print('RES=[{}]'.format(res))

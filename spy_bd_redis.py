@@ -65,10 +65,10 @@ class Redis():
             try:
                 self.rh.hset( self.dlgid, 'LINE', line )
             except Exception as err_var:
-                log(module=__name__, function='insert_line', dlgid=self.dlgid, msg='Redis insert line ERROR !!')
-                log(module=__name__, function='insert_line', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+                log(module=__name__, function='insert_line', dlgid=self.dlgid, msg='ERROR: Redis insert line err !!')
+                log(module=__name__, function='insert_line', dlgid=self.dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
         else:
-            log(module=__name__, function='insert_line', dlgid=self.dlgid, msg='Redis not-connected !!')
+            log(module=__name__, function='insert_line', dlgid=self.dlgid, msg='ERROR: Redis not-connected !!')
         return
  
     
@@ -83,7 +83,7 @@ class Redis():
         
             self.rh.hset( self.dlgid, 'OUTPUTS', '-1' )
         else:
-            log(module=__name__, function='get_cmd_outputs', dlgid=self.dlgid, msg='Redis not-connected !!')
+            log(module=__name__, function='get_cmd_outputs', dlgid=self.dlgid, msg='ERROR: Redis not-connected !!')
 
         return(response)
  
@@ -101,7 +101,7 @@ class Redis():
             self.rh.hset( self.dlgid, 'POUT', '-1')
             self.rh.hset( self.dlgid, 'PSLOT', '-1')    
         else:
-            log(module=__name__, function='get_cmd_pilotos', dlgid=self.dlgid, msg='Redis not-connected !!')
+            log(module=__name__, function='get_cmd_pilotos', dlgid=self.dlgid, msg='ERROR: Redis not-connected !!')
  
         return(response)
 
@@ -121,7 +121,7 @@ class Redis():
                 
                 self.rh.hset( self.dlgid, 'RESET', 'FALSE' )
         else:
-            log(module=__name__, function='get_cmd_reset', dlgid=self.dlgid, msg='Redis not-connected !!')
+            log(module=__name__, function='get_cmd_reset', dlgid=self.dlgid, msg='ERROR: Redis not-connected !!')
         
         return(response)
         

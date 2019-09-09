@@ -82,13 +82,13 @@ class IAUX0_frame:
             self.send_response()
             return
 
-        self.PV_process_conf_piloto(dplt)
+        self.process_conf_piloto(dplt)
         self.send_response()
         return
 
 
-    def PV_process_conf_piloto(self,dplt):
-        log(module=__name__, function='PV_process_conf_piloto', dlgid=self.dlgid, level='SELECT', msg='start')
+    def process_conf_piloto(self,dplt):
+        log(module=__name__, function='process_conf_piloto', dlgid=self.dlgid, level='SELECT', msg='start')
 
         self.plt_dlg = Piloto(self.dlgid)
         self.plt_dlg.init_from_qs()
@@ -101,10 +101,10 @@ class IAUX0_frame:
         # Comparo la configuracion que trae el dlg y la de la bd y repondo al datalogger
         response = ''
         if self.plt_dlg == self.plt_bd:
-            log(module=__name__, function='PV_process_conf_piloto', dlgid=self.dlgid, level='SELECT',msg='Conf PLT: BD eq DLG')
+            log(module=__name__, function='process_conf_piloto', dlgid=self.dlgid, level='SELECT',msg='Conf PLT: BD eq DLG')
             self.response = 'PLT_OK'
         else:
-            log(module=__name__, function='PV_process_conf_piloto', dlgid=self.dlgid, level='SELECT',msg='Conf PLT: BD ne DLG')
+            log(module=__name__, function='process_conf_piloto', dlgid=self.dlgid, level='SELECT',msg='Conf PLT: BD ne DLG')
             self.response = self.plt_bd.get_response_string()
         return
 

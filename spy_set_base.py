@@ -70,7 +70,7 @@ class Confbase:
             self.pwrs_end = int(self.pwrs_end)
         except Exception as err_var:
             log(module=__name__, function='init_from_qs', level='INFO', dlgid=self.dlgid, msg='ERROR: pwrs_unpack {}'.format(form.getvalue('PWRS')))
-            log(module=__name__, function='init_from_qs', level='INFO', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='init_from_qs', level='INFO', dlgid=self.dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
 
         self.csq = form.getfirst('CSQ', '0')
         self.wrst = form.getfirst('WRST', '0')

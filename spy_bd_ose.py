@@ -14,12 +14,13 @@ from spy_log import log
 # ------------------------------------------------------------------------------
 class BDOSE_PQ:
 
-    def __init__(self, modo='local'):
+    def __init__(self, modo='local',server='comms'):
 
         self.datasource = ''
         self.engine = ''
         self.conn = ''
         self.connected = False
+        self.server = server
 
         if modo == 'spymovil':
             self.url = Config['BDATOS']['url_bdose_spymovil']
@@ -39,8 +40,8 @@ class BDOSE_PQ:
             self.engine = create_engine(self.url)
         except Exception as err_var:
             self.connected = False
-            log(module=__name__, function='connect', msg='ERROR: BDOSE {0} engine NOT created. ABORT !!'.format(tag))
-            log(module=__name__, function='connect', msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='connect', msg='ERROR_{0}: BDOSE engine NOT created. ABORT !!'.format(tag))
+            log(module=__name__, function='connect', msg='ERROR: EXCEPTION {}'.format(err_var))
             exit(1)
 
         try:
@@ -48,8 +49,8 @@ class BDOSE_PQ:
             self.connected = True
         except Exception as err_var:
             self.connected = False
-            log(module=__name__, function='connect', msg='ERROR: BDOSE {0} NOT connected. ABORT !!'.format(tag))
-            log(module=__name__, function='connect', msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='connect', msg='ERROR_{0}: BDOSE NOT connected. ABORT !!'.format(tag))
+            log(module=__name__, function='connect', msg='ERROR: EXCEPTION {}'.format(err_var))
             exit(1)
 
         return self.connected
@@ -60,18 +61,24 @@ class BDOSE_PQ:
         log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, level='SELECT', msg='start')
 
         if not self.connect():
-            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: BDOSE {0} can\'t connect !!'.format(tag))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: BDOSE can\'t connect !!')
             return
 
-        query = text("""SELECT timerPoll, timerDial,c0_name, c0_eRange, c0_minValue,c0_maxValue,c0_mag,\
-                    c1_name,c1_eRange,c1_minValue,c1_maxValue,c1_mag,c2_name,c2_eRange,c2_minValue,c2_maxValue,c2_mag,\
-                    c3_name,c3_eRange,c3_minValue,c3_maxValue,c3_mag,c4_name,c4_eRange,c4_minValue,c4_maxValue,c4_mag,\
-                    consigna_mode,consigna_hhmm1,consigna_hhmm2,pwrSaveModo,pwrSaveStartTime,pwrSaveEndTime FROM PQ_tbUnidades WHERE dlgid = '%s'""" % (dlgid))
+        sql = """SELECT timerPoll, timerDial,c0_name, c0_eRange, c0_minValue,c0_maxValue,c0_mag,\
+               c1_name,c1_eRange,c1_minValue,c1_maxValue,c1_mag,c2_name,c2_eRange,c2_minValue,c2_maxValue,c2_mag,\
+               c3_name,c3_eRange,c3_minValue,c3_maxValue,c3_mag,c4_name,c4_eRange,c4_minValue,c4_maxValue,c4_mag,\
+                consigna_mode,consigna_hhmm1,consigna_hhmm2,pwrSaveModo,pwrSaveStartTime,pwrSaveEndTime FROM PQ_tbUnidades WHERE dlgid = '{0}'""".format(dlgid)
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: SQLQUERY: {}'.format(sql))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
+            return
+
         try:
             rp = self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: BDOSE can\'t exec {0} !!'.format(tag))
-            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: BDOSE exec EXCEPTION {}'.format(err_var))
             return
 
         result = rp.first()
@@ -86,7 +93,7 @@ class BDOSE_PQ:
             imin, imax, *r = re.split('-|mA', result[3])
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[3]))
-            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
             imin, imax = 0, 0
 
         d[('A0', 'IMIN')] = imin
@@ -99,7 +106,7 @@ class BDOSE_PQ:
             imin, imax, *r = re.split('-|mA', result[8])
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[8]))
-            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
             imin, imax = 0, 0
 
         d[('A1', 'IMIN')] = imin
@@ -112,7 +119,7 @@ class BDOSE_PQ:
             imin, imax, *r = re.split('-|mA', result[13])
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[13]))
-            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
             imin, imax = 0, 0
         d[('A2', 'IMIN')] = imin
         d[('A2', 'IMAX')] = imax
@@ -126,7 +133,7 @@ class BDOSE_PQ:
            r, magpp = re.split('-', result[18])
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[18]))
-            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
             magpp = 0
         d[('C0', 'MAGPP')] = magpp
         d[('C0', 'PERIOD')] = 100       # Campos de relleno
@@ -139,7 +146,7 @@ class BDOSE_PQ:
             r, magpp = re.split('-', result[23])
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[23]))
-            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
             magpp = 0
         d[('C1', 'MAGPP')] = magpp
         d[('C1', 'PERIOD')] = 100       # Campos de relleno
@@ -159,7 +166,7 @@ class BDOSE_PQ:
             hh, mm, *r = re.split(':', str(result[28]))
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[28]))
-            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
             hh, mm = 0, 0
         d[('CONS', 'HHMM1')] = '{0}{1}'.format(hh, mm)
 
@@ -167,7 +174,7 @@ class BDOSE_PQ:
             hh, mm, *r = re.split(':', str(result[29]))
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[29]))
-            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
             hh, mm = 0, 0
         d[('CONS', 'HHMM2')] = '{0}{1}'.format(hh, mm)
 
@@ -181,7 +188,7 @@ class BDOSE_PQ:
             hh, mm, *r = re.split(':', str(result[31]))
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[31]))
-            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
             hh, mm = 0, 0
         d[('BASE', 'PWRS_HHMM1')] = '{0}{1}'.format (hh, mm)
 
@@ -189,7 +196,7 @@ class BDOSE_PQ:
             hh, mm, *r = re.split(':', str(result[32]))
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[32]))
-            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf PQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
             hh, mm = 0, 0
         d[('BASE', 'PWRS_HHMM2')] = '{0}{1}'.format (hh, mm)
 
@@ -197,128 +204,188 @@ class BDOSE_PQ:
 
 
     def update(self, dlgid, d, tag='PQ'):
-
-        log(module=__name__, function='update', dlgid=dlgid, level='SELECT', msg='start {}'.format(tag))
+        '''
+        Intefase comun para PQ,PZ,TQ: Se usa el tag !!
+        :param dlgid:
+        :param d:
+        :param tag:
+        :return:
+        '''
+        log(module=__name__, function='update', dlgid=dlgid, level='SELECT', msg='{} start'.format(tag))
 
         if self.connect() == False:
-            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: BDOSE {0}can\'t connect !!'.format(tag))
+            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR_{0}: BDOSE can\'t connect !!'.format(tag))
             return False
 
         # PASS1: Inserto frame en la tabla de INITS.
-        query = text("INSERT INTO {0}_tbInits (dlgId,fechaHora,rcvdFrame,sqe ) VALUES ( '{1}',NOW(),'{2}','{3}' )".format\
-                    (tag, dlgid, d['RCVDLINE'],d['CSQ']))
+        sql = "INSERT INTO {0}_tbInits (dlgId,fechaHora,rcvdFrame,sqe ) VALUES ( '{1}',NOW(),'{2}','{3}' )".format(tag, dlgid, d['RCVDLINE'],d['CSQ'])
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR_{0}: SQLQUERY: {1}'.format(tag, sql))
+            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR_{0}: EXCEPTION {1}'.format(tag, err_var))
+            return False
+
         try:
             self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: BDOSE can\'t exec {0} !!'.format(tag))
-            log(module=__name__, function='update', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR_{0}: BDOSE exec EXCEPTION {1}'.format(tag, err_var))
             return False
 
         # PASS2: Actualizo los parametros dinamicos
-        query = text("UPDATE {0}_tbUnidades SET version='{1}', imei='{2}', commitedConf=0, ipAddress='{3}' WHERE dlgid='{4}'".format\
-                    (tag, d['FIRMWARE'], d['IMEI'], d['IPADDRESS'], dlgid))
+        sql = "UPDATE {0}_tbUnidades SET version='{1}', imei='{2}', commitedConf=0, ipAddress='{3}' WHERE dlgid='{4}'".format(tag, d['FIRMWARE'], d['IMEI'], d['IPADDRESS'], dlgid)
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR_{0}: SQLQUERY: {1}'.format(tag, sql))
+            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR_{0}: EXCEPTION {1}'.format(tag, err_var))
+            return False
+
         try:
             self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: BDOSE can\'t exec {0} !!'.format(tag))
-            log(module=__name__, function='update', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR_{0}: BDOSE exec EXCEPTION {1}'.format(tag, err_var))
             return False
 
         return True
 
 
     def process_commited_conf(self, dlgid, tag='PQ'):
-
-        log(module=__name__, function='process_commited_conf', dlgid=dlgid, level='SELECT', msg='start {}'.format(tag))
+        '''
+        Intefase comun para PQ,PZ,TQ: Se usa el tag !!
+        '''
+        log(module=__name__, function='process_commited_conf', dlgid=dlgid, level='SELECT', msg='{} start'.format(tag))
 
         if not self.connect():
-            log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='ERROR: BDOSE {0} can\'t connect !!'.format(tag))
+            log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='ERROR_{0}: BDOSE can\'t connect !!'.format(tag))
             return False
 
-        query = text("SELECT commitedConf FROM {0}_tbUnidades WHERE dlgId = '{1}'".format(tag, dlgid))
+        sql = "SELECT commitedConf FROM {0}_tbUnidades WHERE dlgId = '{1}'".format(tag, dlgid)
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='ERROR_{0}: SQLQUERY: {1}'.format(tag, sql))
+            log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='ERROR_{0}: EXCEPTION {1}'.format(tag, err_var))
+            return False
+
         try:
             rp = self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='ERROR: BDOSE can\'t exec {0} !!'.format(tag))
-            log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
-            return
+            log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='ERROR_{0}: BDOSE exec EXCEPTION {1}'.format(tag, err_var))
+            return False
 
         row = rp.first()
         cc, *rid = row
-        log(module=__name__, function='process_commited_conf', dlgid=dlgid, level='SELECT', msg='cc={}'.format(cc))
+        log(module=__name__, function='process_commited_conf', dlgid=dlgid, level='SELECT', msg='{0} cc={1}'.format(tag, cc))
         return cc
 
 
     def clear_commited_conf(self, dlgid, tag='PQ'):
-
-        log(module=__name__, function='clear_commited_conf', dlgid=dlgid, level='SELECT', msg='start {}'.format(tag))
+        '''
+        Intefase comun para PQ,PZ,TQ: Se usa el tag !!
+        '''
+        log(module=__name__, function='clear_commited_conf', dlgid=dlgid, level='SELECT', msg='{} start'.format(tag))
 
         if not self.connect():
-            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='ERROR: BDOSE {0}can\'t connect !!'.format(tag))
+            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='ERROR_{}: BDOSE can\'t connect !!'.format(tag))
             return False
 
-        query = text("UPDATE {0}_tbUnidades SET commitedConf = '0' WHERE dlgId = '{1}'".format(tag, dlgid ))
-        print ( query)
+        sql = "UPDATE {0}_tbUnidades SET commitedConf = '0' WHERE dlgId = '{1}'".format(tag, dlgid )
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='ERROR_{0}: SQLQUERY: {1}'.format(tag, sql))
+            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='ERROR_{0}: EXCEPTION {1}'.format(tag, err_var))
+            return False
+
         try:
             rp = self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='ERROR: BDOSE can\'t exec {0} !!'.format(tag))
-            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
-            return
+            log(module=__name__, function='clear_commited_conf', dlgid=dlgid,msg='ERROR_{0}: BDOSE exec EXCEPTION {1}'.format(tag, err_var))
+            return False
 
-        return
+        return True
 
 
     def insert_data_line(self, dlgid, d, tag='PQ'):
 
         if not self.connect():
-            log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='ERROR: BDOSE {0} can\'t connect !!'.format(tag))
+            log(module=__name__, server=self.server, function='insert_data_line PQ', dlgid=dlgid, msg='ERROR: BDOSE can\'t connect !!')
             return False
 
-        query = text("""INSERT INTO PQ_tbDatos ( dlgId,fechaSys,fechaData,pkMonitoreo,pkInstalacion,c0_name,c0_value,\
-         c1_name,c1_value,c2_name,c2_value,c5_name,c5_value, rcvdFrame ) VALUES ( '{0}', now(), '{1}',\
-         (select pkMonitoreo from PQ_tbInstalaciones where dlgId='{0}}' and status='ACTIVA'),\
-         (select pkInstalacion from PQ_tbInstalaciones where dlgId='{0}' and status='ACTIVA'),'pA','{2}','pB','{3}','q0','{4}','bt','{5}','{6}'\
-         )""".format(dlgid, d.get('timestamp', '00-00-00 00:00'), d.get('pA', '0'), d.get('pB', '0'), d.get('bt', '0'),
-                     d.get('RCVDLINE', 'err')))
+        sql = """INSERT INTO PQ_tbDatos ( dlgId,fechaSys,fechaData,pkMonitoreo,pkInstalacion,c0_name,c0_value,c1_name,c1_value,c2_name,c2_value,c5_name,c5_value, rcvdFrame ) \
+        VALUES ( '{0}', now(), '{1}',(select pkMonitoreo from PQ_tbInstalaciones where dlgId='{0}' and status='ACTIVA'),(select pkInstalacion from PQ_tbInstalaciones where \
+        dlgId='{0}' and status='ACTIVA'),'pA','{2}','pB','{3}','q0','{4}','bt','{5}','{6}')""".format(dlgid, d.get('timestamp','00-00-00 00:00'),\
+        d.get('pA', '0'), d.get('pB', '0'), d.get('q0', '0'),d.get('bt', '0'), d.get('RCVDLINE', 'err'))
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, server=self.server, function='insert_data_line PQ', dlgid=dlgid, msg='ERROR: SQLQUERY: {1}'.format(sql))
+            log(module=__name__, server=self.server, function='insert_data_line PQ', dlgid=dlgid,  msg='ERROR: EXCEPTION {1}'.format( err_var))
+            return False
 
         try:
             self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='QUERY {}'.format(query))
-            log(module=__name__, function='insert_data_line', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            if 'Duplicate entry' in str(err_var):
+                # Los duplicados no hacen nada malo. Se da mucho en testing.
+                log(module=__name__, server=self.server, function='insert_data_line PQ', dlgid=dlgid, msg='WARN: Duplicated Key')
+                return True
+            else:
+                log(module=__name__, server=self.server, function='insert_data_line PQ', dlgid=dlgid,msg='ERROR: exec EXCEPTION {}'.format( err_var))
+                #log(module=__name__, server=self.server, function='insert_data_line PQ', dlgid=dlgid,msg='DEBUG ERROR: dlgid {}'.format(dlgid))
+                #log(module=__name__, server=self.server, function='insert_data_line PQ', dlgid=dlgid,msg='DEBUG ERROR: timestamp {}'.format(d.get('timestamp', '00-00-00 00:00')))
+                #log(module=__name__, server=self.server, function='insert_data_line PQ', dlgid=dlgid,msg='DEBUG ERROR: pA {}'.format(d.get('pA', '0')))
+                #log(module=__name__, server=self.server, function='insert_data_line PQ', dlgid=dlgid,msg='DEBUG ERROR: pB {}'.format(d.get('pB', '0')))
+                #log(module=__name__, server=self.server, function='insert_data_line PQ', dlgid=dlgid,msg='DEBUG ERROR: q0 {}'.format(d.get('q0', '0')))
+                #log(module=__name__, server=self.server, function='insert_data_line PQ', dlgid=dlgid,msg='DEBUG ERROR: bt {}'.format(d.get('bt', '0')))
+                return False
 
-        return
+        return True
 
 
     def insert_data_online(self, dlgid, d, tag='PQ'):
 
         if not self.connect():
-            log(module=__name__, function='insert_data_online', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
-            return
+            log(module=__name__, server=self.server, function='insert_data_online PQ', dlgid=dlgid, msg='ERROR: can\'t connect !!')
+            return False
 
-        query = text("""INSERT INTO PQ_tbDatos ( dlgId,fechaSys,fechaData,pkMonitoreo,pkInstalacion,c0_name,c0_value,\
-        c1_name,c1_value,c2_name,c2_value,c5_name,c5_value, sqe) VALUES ( '{0}', now(), '{1}',\
-        (select pkMonitoreo from PQ_tbInstalaciones where dlgId='{0}}' and status='ACTIVA'),\
-        (select pkInstalacion from PQ_tbInstalaciones where dlgId='{0}' and status='ACTIVA'),'pA','{2}','pB','{3}','q0','{4}','bt','{5}',\
-        ( select sqe from PQ_tbInits where dlgId='{0}' order by pkInits DESC limit 1)
-        )""".format(dlgid, d.get('timestamp', '00-00-00 00:00'),d.get('pA', '0'),d.get('pB', '0'),d.get('bt', '0')  ))
+        sql = """INSERT INTO PQ_tbDatosOnline ( dlgId,fechaSys,fechaData,pkMonitoreo,pkInstalacion,c0_name,c0_value,c1_name,c1_value,c2_name,c2_value,c5_name,c5_value, sqe) \
+        VALUES ( '{0}', now(), '{1}',\
+        (select pkMonitoreo from PQ_tbInstalaciones where dlgId='{0}' and status='ACTIVA'),\
+        (select pkInstalacion from PQ_tbInstalaciones where dlgId='{0}' and status='ACTIVA'),
+        'pA','{2}','pB','{3}','q0','{4}','bt','{5}',( select sqe from PQ_tbInits where dlgId='{0}' order by pkInits DESC limit 1))""".\
+        format(dlgid, d.get('timestamp', '00-00-00 00:00'), d.get('pA', '0'), d.get('pB', '0'),d.get('q0', '0'), d.get('bt', '0')  )
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, server=self.server, function='insert_data_online PQ', dlgid=dlgid, msg='ERROR: SQLQUERY:')
+            log(module=__name__, server=self.server, function='insert_data_online PQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
+            return False
 
         try:
             self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='insert_data_online', dlgid=dlgid, msg='QUERY {}'.format(query))
-            log(module=__name__, function='insert_data_online', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, server=self.server, function='insert_data_online PQ', dlgid=dlgid,msg='ERROR: BDOSE exec EXCEPTION {}'.format(err_var))
+            return False
 
-        delquery = text("""DELETE FROM PQ_tbDatosOnline WHERE dlgId = '{0}' AND  pkDatos NOT IN ( SELECT * FROM ( SELECT pkDatos FROM PQ_tbDatosOnline WHERE dlgId = '{0}' \
-        ORDER BY fechaData DESC LIMIT 1) AS temp )""".format(dlgid))
+        sql = """DELETE FROM PQ_tbDatosOnline WHERE dlgId = '{0}' AND  pkDatos NOT IN ( SELECT * FROM ( SELECT pkDatos FROM PQ_tbDatosOnline WHERE dlgId = '{0}' \
+        ORDER BY fechaData DESC LIMIT 1) AS temp )""".format(dlgid)
+
         try:
-            self.conn.execute(delquery)
+            query = text(sql)
         except Exception as err_var:
-            log(module=__name__, function='insert_data_online', dlgid=dlgid,msg='QUERY: DELETE {}'.format(query))
-            log(module=__name__, function='insert_data_online', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, server=self.server, function='insert_data_online PQ', dlgid=dlgid, msg='ERROR: SQLQUERY: {}'.format(sql))
+            log(module=__name__, server=self.server, function='insert_data_online PQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
+            return False
 
-        return
+        try:
+            self.conn.execute(query)
+        except Exception as err_var:
+            log(module=__name__, server=self.server, function='insert_data_online PQ', dlgid=dlgid,msg='ERROR: BDOSE exec EXCEPTION {}'.format(err_var))
+            return False
+
+        return True
 
 
 class BDOSE_PZ (BDOSE_PQ):
@@ -333,15 +400,21 @@ class BDOSE_PZ (BDOSE_PQ):
 
         if not self.connect():
             log(module=__name__, function='read_dlg_conf PZ', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
-            return
+            return False
 
-        query = text("SELECT timerPoll FROM PZ_tbUnidades WHERE dlgid = '{0}'".format(dlgid))
+        sql = "SELECT timerPoll FROM PZ_tbUnidades WHERE dlgid = '{0}'".format(dlgid)
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, function='read_dlg_conf PZ', dlgid=dlgid, msg='ERROR: BDOSE_{0} can\'t exec {1} !!'.format(tag, sql))
+            log(module=__name__, function='read_dlg_conf PZ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
+            return False
+
         try:
             rp = self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf PZ', dlgid=dlgid, msg='ERROR: BDOSE can\'t exec PZ !!')
-            log(module=__name__, function='read_dlg_conf PZ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
-            return
+            log(module=__name__, function='read_dlg_conf PZ', dlgid=dlgid,msg='ERROR: BDOSE exec EXCEPTION {}'.format(err_var))
+            return False
 
         result = rp.first()
         d = defaultdict(dict)
@@ -365,50 +438,68 @@ class BDOSE_PZ (BDOSE_PQ):
     def insert_data_line(self, dlgid, d, tag='PZ'):
 
         if not self.connect():
-            log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
-            exit(0)
+            log(module=__name__, function='insert_data_line PZ', dlgid=dlgid, msg='ERROR: can\'t connect !!')
+            return False
 
-        query = text("""INSERT IGNORE INTO PZ_tbDatos (pozoId,fechaSys,fechaData,pkMonitoreo,pkInstalacion,c0_name,c0_value, rcvdFrame) \
+        sql = """INSERT IGNORE INTO PZ_tbDatos (pozoId,fechaSys,fechaData,pkMonitoreo,pkInstalacion,c0_name,c0_value, rcvdFrame) \
         	        VALUES ( '{0}', now(), '{1}', (select pkMonitoreo from PZ_tbInstalaciones where pozoId='{0}' and status='ACTIVA'), \
         	        (select pkInstalacion from PZ_tbInstalaciones where pozoId='{0}' and status='ACTIVA'),'H1', {2}, '{3}' \
-        	        )""".format(dlgid, d.get('timestamp', '00-00-00 00:00'), d.get('DIST', '-1'), d.get('RCVDLINE', 'err')))
+        	        )""".format(dlgid, d.get('timestamp', '00-00-00 00:00'), d.get('DIST', '-1'), d.get('RCVDLINE', 'err'))
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, function='insert_data_line PZ', dlgid=dlgid, msg='ERROR: SQLQUERY: {}'.format(sql))
+            log(module=__name__, function='insert_data_line PZ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
+            return False
 
         try:
             self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='QUERY {}'.format(query))
-            log(module=__name__, function='insert_data_line', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='insert_data_line PZ', dlgid=dlgid,msg='ERROR: BDOSE exec EXCEPTION {}'.format(err_var))
+            return False
 
-        return
+        return True
 
 
     def insert_data_online(self, dlgid, d, tag='PZ'):
 
         if not self.connect():
-            log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
-            exit(0)
+            log(module=__name__, function='insert_data_online PZ', dlgid=dlgid, msg='ERROR: can\'t connect !!')
+            return False
 
-        query = text("""INSERT IGNORE INTO PZ_tbDatosOnline (pozoId,fechaSys,fechaData,pkMonitoreo,pkInstalacion,c0_name,c0_value, sqe) \
+        sql = """INSERT IGNORE INTO PZ_tbDatosOnline (pozoId,fechaSys,fechaData,pkMonitoreo,pkInstalacion,c0_name,c0_value, sqe) \
          	        VALUES ( '{0}', now(), '{1}', (select pkMonitoreo from PZ_tbInstalaciones where pozoId='{0}' and status='ACTIVA'), \
          	        (select pkInstalacion from PZ_tbInstalaciones where pozoId='{0}' and status='ACTIVA'),'H1', {2}, '{3}',\
          	        ( select sqe from PZ_tbInits where dlgId='{0}}' order by pkInits DESC limit 1)
-         	        )""".format(dlgid, d.get('timestamp', '00-00-00 00:00'), d.get('DIST', '-1')))
+         	        )""".format(dlgid, d.get('timestamp', '00-00-00 00:00'), d.get('DIST', '-1'))
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, function='insert_data_online PZ', dlgid=dlgid, msg='ERROR: SQLQUERY: {}'.format(sql))
+            log(module=__name__, function='insert_data_online PZ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
+            return False
 
         try:
             self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='QUERY {}'.format(query))
-            log(module=__name__, function='insert_data_line', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='insert_data_online PZ', dlgid=dlgid,msg='ERROR: BDOSE exec EXCEPTION {}'.format(err_var))
+            return False
 
-        delquery = text("""DELETE FROM PZ_tbDatosOnline WHERE pozoId = '{0}' AND  pkDatos NOT IN ( SELECT * FROM ( SELECT pkDatos FROM PZ_tbDatosOnline WHERE pozoId = '{0}' \
-        ORDER BY fechaData DESC LIMIT 1) AS temp )""".format(dlgid))
+        sql = """DELETE FROM PZ_tbDatosOnline WHERE pozoId = '{0}' AND  pkDatos NOT IN ( SELECT * FROM ( SELECT pkDatos FROM PZ_tbDatosOnline WHERE pozoId = '{0}' ORDER BY fechaData DESC LIMIT 1) AS temp )""".format(dlgid)
         try:
-            self.conn.execute(delquery)
+            query = text(sql)
         except Exception as err_var:
-            log(module=__name__, function='insert_data_online', dlgid=dlgid,msg='QUERY: DELETE {}'.format(query))
-            log(module=__name__, function='insert_data_online', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='insert_data_online PZ', dlgid=dlgid, msg='ERROR: SQLQUERY: {}'.format(sql))
+            log(module=__name__, function='insert_data_online PZ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
+            return False
 
-        return
+        try:
+            self.conn.execute(query)
+        except Exception as err_var:
+            log(module=__name__, function='insert_data_online PZ', dlgid=dlgid,msg='ERROR: BDOSE exec EXCEPTION {}'.format(err_var))
+            return False
+
+        return True
 
 
 class BDOSE_TQ (BDOSE_PQ):
@@ -423,19 +514,24 @@ class BDOSE_TQ (BDOSE_PQ):
         log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, level='SELECT', msg='start')
 
         if not self.connect():
-            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
-            return
+            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: can\'t connect !!')
+            return False
 
-        query = text("""SELECT timerPoll,timerDial,c0_name,c0_eRange,c0_minValue,c0_maxValue,c1_name,c1_eRange,\
+        sql = """SELECT timerPoll,timerDial,c0_name,c0_eRange,c0_minValue,c0_maxValue,c1_name,c1_eRange,\
                       c1_minValue,c1_maxValue, c2_name,c2_eRange,c2_minValue,c2_maxValue, pwrSaveModo,pwrSaveStartTime,\
-                      pwrSaveEndTime FROM TQ_tbUnidades WHERE dlgid = '%s'""" % (dlgid))
+                      pwrSaveEndTime FROM TQ_tbUnidades WHERE dlgid = '{}'""".format(dlgid)
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: BDOSE can\'t exec {0} !!'.format(sql))
+            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: EXCEPTION {0}'.format(err_var))
+            return False
 
         try:
             rp = self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: can\'t exec {0} !!'.format(tag))
-            log(module=__name__, function='read_dlg_conf TQ', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
-            return
+            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid,msg='ERROR: BDOSE exec EXCEPTION {0}'.format(err_var))
+            return False
 
         result = rp.first()
         d = defaultdict(dict)
@@ -447,8 +543,8 @@ class BDOSE_TQ (BDOSE_PQ):
         try:
             imin, imax, *r = re.split('-|mA', result[3])
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[3]))
-            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: split {0}'.format(result[3]))
+            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: EXCEPTION {0}'.format(err_var))
             imin, imax = 0, 0
 
         d[('A0', 'IMIN')] = imin
@@ -462,7 +558,7 @@ class BDOSE_TQ (BDOSE_PQ):
             imin, imax, *r = re.split('-|mA', result[7])
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[7]))
-            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
             imin, imax = 0, 0
 
         d[('A1', 'IMIN')] = imin
@@ -476,7 +572,7 @@ class BDOSE_TQ (BDOSE_PQ):
             imin, imax, *r = re.split('-|mA', result[11])
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[11]))
-            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
             imin, imax = 0, 0
 
         d[('A2', 'IMIN')] = imin
@@ -494,19 +590,19 @@ class BDOSE_TQ (BDOSE_PQ):
             hh, mm, *r = re.split(':', str(result[15]))
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[15]))
-            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
             hh, mm = 0, 0
         d[('BASE', 'PWRS_HHMM1')] = '{0}{1}'.format (hh, mm)
         try:
             hh, mm, *r = re.split(':', str(result[16]))
         except Exception as err_var:
             log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: split {}'.format(result[16]))
-            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
             hh, mm = 0, 0
         d[('BASE', 'PWRS_HHMM2')] = '{0}{1}'.format (hh, mm)
 
-        for key in d:
-            log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='DEBUG key={0}, val={1}'.format(key,d[key]))
+        #for key in d:
+        #   log(module=__name__, function='read_dlg_conf TQ', dlgid=dlgid, msg='DEBUG key={0}, val={1}'.format(key,d[key]))
 
         return d
 
@@ -526,21 +622,27 @@ class BDOSE_TQ (BDOSE_PQ):
     def insert_data_line(self, dlgid, d, tag='TQ'):
 
         if not self.connect():
-            log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
-            exit(0)
+            log(module=__name__, function='insert_data_line TQ', dlgid=dlgid, msg='ERROR: can\'t connect !!')
+            return False
 
-        query = text("""INSERT IGNORE INTO TQ_tbDatos (tanqueId,fechaSys,fechaData,pkMonitoreo,pkInstalacion,c0_name,c0_value,c1_name,c1_value,rcvdFrame) \
+        sql = """INSERT IGNORE INTO TQ_tbDatos (tanqueId,fechaSys,fechaData,pkMonitoreo,pkInstalacion,c0_name,c0_value,c1_name,c1_value,rcvdFrame) \
             VALUES ( '{0}', now(), '{1}',(select pkMonitoreo from TQ_tbInstalaciones where tanqueId='{0}' and status='ACTIVA'),\
             (select pkInstalacion from TQ_tbInstalaciones where tanqueId='{0}' and status='ACTIVA'),'H', {2}, 'bt', {3}, '{4}'\
-            )""".format( dlgid, d.get('timestamp','00-00-00 00:00'), d.get('H','0'), d.get('bt','0'), d.get('RCVDLINE','err') ) )
+            )""".format( dlgid, d.get('timestamp','00-00-00 00:00'), d.get('H','0'), d.get('bt','0'), d.get('RCVDLINE','err') )
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, function='insert_data_line TQ', dlgid=dlgid, msg='ERROR: SQLQUERY: {}'.format(sql))
+            log(module=__name__, function='insert_data_line TQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
+            return False
 
         try:
             self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='QUERY {}'.format(query))
-            log(module=__name__, function='insert_data_line', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='insert_data_line TQ', dlgid=dlgid,msg='ERROR: BDOSE exec EXCEPTION {}'.format(err_var))
+            return False
 
-        return
+        return True
 
 
     def insert_data_online(self, dlgid, d, tag='TQ'):
@@ -549,25 +651,38 @@ class BDOSE_TQ (BDOSE_PQ):
             log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
             exit(0)
 
-        query = text("""INSERT IGNORE INTO TQ_tbDatosOnline (tanqueId,fechaSys,fechaData,pkMonitoreo,pkInstalacion,c0_name,c0_value,c1_name,c1_value,sqe) \
+        sql = """INSERT IGNORE INTO TQ_tbDatosOnline (tanqueId,fechaSys,fechaData,pkMonitoreo,pkInstalacion,c0_name,c0_value,c1_name,c1_value,sqe) \
         VALUES ( '{0}', now(), '{1}', (select pkMonitoreo from TQ_tbInstalaciones where tanqueId='{0}' and status='ACTIVA'),\
         (select pkInstalacion from TQ_tbInstalaciones where tanqueId='{0}' and status='ACTIVA'),'H', {2}, 'bt', {3}, \
         ( select sqe from TQ_tbInits where dlgId='{0}' order by pkInits DESC limit 1)\
-        )""".format( dlgid, d.get('timestamp','00-00-00 00:00'), d.get('H','0'), d.get('bt','0') ) )
+        )""".format( dlgid, d.get('timestamp','00-00-00 00:00'), d.get('H','0'), d.get('bt','0') )
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, function='insert_data_online TQ', dlgid=dlgid, msg='ERROR: SQLQUERY: {}'.format(sql))
+            log(module=__name__, function='insert_data_online TQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
+            return False
 
         try:
             self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='QUERY {}'.format(query))
-            log(module=__name__, function='insert_data_line', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='insert_data_online TQ', dlgid=dlgid,msg='ERROR: BDOSE exec EXCEPTION {}'.format(err_var))
+            return False
 
-        delquery = text("""DELETE FROM TQ_tbDatosOnline WHERE tanqueId = '{0}' AND  pkDatos NOT IN ( SELECT * FROM ( SELECT pkDatos FROM TQ_tbDatosOnline WHERE tanqueId = '{0}' \
-        ORDER BY fechaData DESC LIMIT 1) AS temp )""".format(dlgid))
+        sql = """DELETE FROM TQ_tbDatosOnline WHERE tanqueId = '{0}' AND  pkDatos NOT IN ( SELECT * FROM ( SELECT pkDatos FROM TQ_tbDatosOnline WHERE tanqueId = '{0}' \
+        ORDER BY fechaData DESC LIMIT 1) AS temp )""".format(dlgid)
         try:
-            self.conn.execute(delquery)
+            query = text(sql)
         except Exception as err_var:
-            log(module=__name__, function='insert_data_online', dlgid=dlgid, msg='QUERY: DELETE {}'.format(query))
-            log(module=__name__, function='insert_data_online', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, function='insert_data_online TQ', dlgid=dlgid, msg='ERROR: SQLQUERY: {}'.format(sql))
+            log(module=__name__, function='insert_data_online TQ', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
+            return False
 
-        return
+        try:
+            self.conn.execute(query)
+        except Exception as err_var:
+            log(module=__name__, function='insert_data_online TQ', dlgid=dlgid,msg='ERROR: BDOSE exec EXCEPTION {}'.format(err_var))
+            return False
+
+        return True
 

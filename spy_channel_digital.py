@@ -35,7 +35,7 @@ class DigitalChannel():
                 self.tpoll = int(self.tpoll)
             except Exception as err_var:
                 log(module=__name__, function='init_from_qs', level='INFO', dlgid=self.dlgid, msg='ERROR: {0}_unpack {1}'.format(ch_id, field))
-                log(module=__name__, function='init_from_qs', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+                log(module=__name__, function='init_from_qs', dlgid=self.dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
                 self.name = 'X'
                 self.tpoll = 0
         return

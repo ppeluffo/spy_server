@@ -8,21 +8,25 @@ from sqlalchemy import text
 from spy import Config
 from collections import defaultdict
 from spy_log import log
+import MySQLdb
 
 # ------------------------------------------------------------------------------
 class BDGDA:
 
-    def __init__(self, modo='local'):
+    def __init__(self, modo='local', server='comms'):
 
         self.datasource = ''
         self.engine = ''
         self.conn = ''
         self.connected = False
+        self.server = server
 
         if modo == 'spymovil':
             self.url = Config['BDATOS']['url_gda_spymovil']
         elif modo == 'local':
             self.url = Config['BDATOS']['url_gda_local']
+        elif modo == 'ute':
+            self.url = Config['BDATOS']['url_gda_ute']
         return
 
 
@@ -37,8 +41,8 @@ class BDGDA:
             self.engine = create_engine(self.url)
         except Exception as err_var:
             self.connected = False
-            log(module=__name__, function='connect', msg='ERROR: {0} engine NOT created. ABORT !!'.format(tag))
-            log(module=__name__, function='connect', msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, server=self.server, function='connect', msg='ERROR_{}: engine NOT created. ABORT !!'.format(tag))
+            log(module=__name__, server=self.server, function='connect', msg='ERROR: EXCEPTION_{0} {1}'.format(tag, err_var))
             exit(1)
 
         try:
@@ -46,8 +50,8 @@ class BDGDA:
             self.connected = True
         except Exception as err_var:
             self.connected = False
-            log(module=__name__, function='connect', msg='ERROR: {0} NOT connected. ABORT !!'.format(tag))
-            log(module=__name__, function='connect', msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, server=self.server, function='connect', msg='ERROR_{}: NOT connected. ABORT !!'.format(tag))
+            log(module=__name__, server=self.server, function='connect', msg='ERROR: EXCEPTION_{0} {1}'.format(tag, err_var))
             exit(1)
 
         return self.connected
@@ -78,27 +82,32 @@ class BDGDA:
         Los datos se ponene un un diccionario con key=parametro y este se retorna
 
         '''
-        log(module=__name__, function='read_piloto_conf', dlgid=dlgid, level='SELECT', msg='start')
+        log(module=__name__, server=self.server, function='read_piloto_conf', dlgid=dlgid, level='SELECT', msg='start')
         if not self.connect():
-            log(module=__name__, function='read_piloto_conf', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
+            log(module=__name__, server=self.server, function='read_piloto_conf', dlgid=dlgid, msg='ERROR: can\'t connect gda !!')
             return False
 
-        query = text("""SELECT spx_unidades_configuracion.nombre as 'canal', 
+        sql = """SELECT spx_unidades_configuracion.nombre as 'canal', 
                          spx_configuracion_parametros.parametro, spx_configuracion_parametros.value, 
                          spx_configuracion_parametros.configuracion_id as 'param_id' 
                          FROM spx_unidades,spx_unidades_configuracion, spx_tipo_configuracion, spx_configuracion_parametros 
                          WHERE spx_unidades.id = spx_unidades_configuracion.dlgid_id 
                          AND spx_unidades_configuracion.tipo_configuracion_id = spx_tipo_configuracion.id 
                          AND spx_configuracion_parametros.configuracion_id = spx_unidades_configuracion.id 
-                         AND spx_unidades_configuracion.nombre = 'PILOTO' AND spx_unidades.dlgid = '%s'""" % (dlgid))
+                         AND spx_unidades_configuracion.nombre = 'PILOTO' AND spx_unidades.dlgid = '{}'""".format(dlgid)
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, server=self.server, function='read_piloto_conf', dlgid=dlgid, msg='ERROR: SQLQUERY: {}'.format(sql))
+            log(module=__name__, server=self.server, function='read_piloto_conf', dlgid=dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
+            return False
 
         d = dict()
         try:
             rp = self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='read_piloto_conf', dlgid=dlgid, msg='ERROR: can\'t exec gda !!')
-            log(module=__name__, function='read_piloto_conf', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
-            return (d)
+            log(module=__name__, server=self.server, function='read_piloto_conf', dlgid=dlgid,msg='ERROR: GDA exec EXCEPTION {}'.format(err_var))
+            return False
 
         results = rp.fetchall()
         d = dict()
@@ -106,7 +115,7 @@ class BDGDA:
             tag, pname, value, pid = row
             d[pname] = value
 
-        return (d)
+        return d
 
 
     def read_dlg_conf(self, dlgid, tag='GDA'):
@@ -124,70 +133,74 @@ class BDGDA:
                 EL diccionario lo manejo con 2 claves para poder usar el metodo get y tener
                 un valor por default en caso de que no tenga alguna clave
         '''
-        log(module=__name__, function='read_dlg_conf', dlgid=dlgid, level='SELECT', msg='start')
+        log(module=__name__, server=self.server, function='read_dlg_conf', dlgid=dlgid, level='SELECT', msg='start_{}'.format(tag))
 
         if not self.connect(tag):
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
+            log(module=__name__, server=self.server, function='read_dlg_conf', dlgid=dlgid, msg='ERROR_{}: can\'t connect !!'.format(tag))
             return
 
-        query = text("""SELECT spx_unidades_configuracion.nombre as 'canal', spx_configuracion_parametros.parametro, 
+        sql = """SELECT spx_unidades_configuracion.nombre as 'canal', spx_configuracion_parametros.parametro, 
                     spx_configuracion_parametros.value, spx_configuracion_parametros.configuracion_id as \"param_id\" FROM spx_unidades,
                     spx_unidades_configuracion, spx_tipo_configuracion, spx_configuracion_parametros 
                     WHERE spx_unidades.id = spx_unidades_configuracion.dlgid_id 
                     AND spx_unidades_configuracion.tipo_configuracion_id = spx_tipo_configuracion.id 
                     AND spx_configuracion_parametros.configuracion_id = spx_unidades_configuracion.id 
-                    AND spx_unidades.dlgid = '%s'""" % (dlgid))
+                    AND spx_unidades.dlgid = '{}'""".format (dlgid)
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, server=self.server, function='read_dlg_conf', dlgid=dlgid, msg='ERROR_{0}: SQLQUERY: {1}'.format(tag, sql))
+            log(module=__name__, server=self.server, function='read_dlg_conf', dlgid=dlgid, msg='ERROR_{0}: EXCEPTION {1}'.format(tag, err_var))
+            return False
 
         try:
             rp = self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, msg='ERROR: can\'t exec {0} !!'.format(tag))
-            log(module=__name__, function='read_dlg_conf', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
-            return
+            log(module=__name__, server=self.server, function='read_dlg_conf', dlgid=dlgid,msg='ERROR_{}: exec EXCEPTION {}'.format(tag, err_var))
+            return False
 
         results = rp.fetchall()
         d = defaultdict(dict)
         for row in results:
             canal, pname, value, pid = row
             d[(canal, pname)] = value
-            log(module=__name__, function='read_dlg_conf', dlgid=dlgid, level='SELECT', msg='BD conf: [{0}][{1}]=[{2}]'.format( canal, pname, d[(canal, pname)]))
+            log(module=__name__, server=self.server, function='read_dlg_conf', dlgid=dlgid, level='SELECT', msg='BD_{0} conf: [{1}][{2}]=[{3}]'.format( tag,canal, pname, d[(canal, pname)]))
 
         return d
 
 
     def update(self, dlgid, d, tag='GDA'):
 
-        log(module=__name__, function='update', dlgid=dlgid, level='SELECT', msg='start' )
+        log(module=__name__, server=self.server, function='update', dlgid=dlgid, level='SELECT', msg='start_{}'.format(tag) )
 
         if not self.connect():
-            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
+            log(module=__name__, server=self.server, function='update', dlgid=dlgid, msg='ERROR_{}: can\'t connect !!'.format(tag))
             return False
 
         # PASS1: Inserto frame en la tabla de INITS.
-        query = text("""INSERT IGNORE INTO spx_inits (fecha,dlgid_id,csq,rxframe) VALUES ( NOW(), \
-                     ( SELECT id FROM spx_unidades WHERE dlgid = '%s'), '%s', '%s')""" % (dlgid, d['CSQ'], d['RCVDLINE']))
-
+        sql = """INSERT IGNORE INTO spx_inits (fecha,dlgid_id,csq,rxframe) VALUES ( NOW(), \
+                     ( SELECT id FROM spx_unidades WHERE dlgid = '{0}'), '{1}', '{2}')""" .format(dlgid, d['CSQ'], d['RCVDLINE'])
         try:
-            self.conn.execute(query)
+            query = text(sql)
         except Exception as err_var:
-            log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: can\'t exec(1) {0} !!'.format(tag))
-            log(module=__name__, function='update', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
-            return
+            log(module=__name__, server=self.server, function='update', dlgid=dlgid, msg='ERROR_{0}: SQLQUERY: {1}'.format(tag, sql))
+            log(module=__name__, server=self.server, function='update', dlgid=dlgid, msg='ERROR_{0}: EXCEPTION {1}'.format(tag, err_var))
+            return False
 
         # PASS2: Actualizo los parametros dinamicos
         for key in d:
             value = d[key]
-            query = text("""UPDATE spx_configuracion_parametros SET value = '%s' WHERE parametro = '%s' \
+            sql = """UPDATE spx_configuracion_parametros SET value = '{0}' WHERE parametro = '{1}' \
                          AND configuracion_id = ( SELECT id FROM spx_unidades_configuracion WHERE nombre = 'BASE' \
-                         AND dlgid_id = ( SELECT id FROM spx_unidades WHERE dlgid = '%s'))""" % (value, key, dlgid))
+                         AND dlgid_id = ( SELECT id FROM spx_unidades WHERE dlgid = '{2}'))""".format(value, key, dlgid)
             try:
-                self.conn.execute(query)
+                query = text(sql)
             except Exception as err_var:
-                log(module=__name__, function='update', dlgid=dlgid, msg='ERROR: can\'t exec(2) {0} !!'.format(tag))
-                log(module=__name__, function='connect', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
-                return
+                log(module=__name__, server=self.server, function='update', dlgid=dlgid,msg='ERROR_{0}: SQLQUERY: {1}'.format(tag, sql))
+                log(module=__name__, server=self.server, function='update', dlgid=dlgid,msg='ERROR_{0}: EXCEPTION {1}'.format(tag, err_var))
+                return False
 
-            log(module=__name__, function='update', dlgid=dlgid, level='SELECT', msg='{0}={1}'.format(key,value))
+            log(module=__name__, server=self.server, function='update', dlgid=dlgid, level='SELECT', msg='{0}: {1}={2}'.format(tag, key,value))
 
         return
 
@@ -203,97 +216,133 @@ class BDGDA:
             log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
             return
 
-        query = text("""SELECT value, configuracion_id FROM spx_configuracion_parametros WHERE parametro = 'COMMITED_CONF' 
+        sql = """SELECT value, configuracion_id FROM spx_configuracion_parametros WHERE parametro = 'COMMITED_CONF' 
                      AND configuracion_id = ( SELECT id FROM spx_unidades_configuracion WHERE nombre = 'BASE' 
-                     AND dlgid_id = ( SELECT id FROM spx_unidades WHERE dlgid = '%s') )""" % (dlgid))
+                     AND dlgid_id = ( SELECT id FROM spx_unidades WHERE dlgid = '{}') )""".format(dlgid)
+        try:
+            query = text(sql)
+        except Exception as err_var:
+            log(module=__name__, server=self.server, function='process_commited_conf', dlgid=dlgid, msg='ERROR_{0}: SQLQUERY: {1}'.format(tag, sql))
+            log(module=__name__, server=self.server, function='process_commited_conf', dlgid=dlgid, msg='ERROR_{0}: EXCEPTION {1}'.format(tag, err_var))
+            return False
 
         try:
             rp = self.conn.execute(query)
         except Exception as err_var:
-            log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='ERROR: can\'t exec {0} !!'.format(tag))
-            log(module=__name__, function='process_commited_conf', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
-            return
-
+            log(module=__name__, server=self.server, function='process_commited_conf', dlgid=dlgid,msg='ERROR_{}: exec EXCEPTION {}'.format(tag, err_var))
+            return False
         #row = rp.first()
         cc, rid = rp.first()
-        log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='cc={}'.format(cc))
+        log(module=__name__, function='process_commited_conf', dlgid=dlgid, msg='{0}: cc={1}'.format(tag, cc))
         return (cc)
 
 
     def clear_commited_conf(self, dlgid, tag='GDA'):
 
-        log(module=__name__, function='clear_commited_conf', dlgid=dlgid, level='SELECT', msg='start')
+        log(module=__name__, function='clear_commited_conf', dlgid=dlgid, level='SELECT', msg='start_{}'.format(tag))
 
         if not self.connect():
-            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='ERROR: can\'t connect {0}} !!'.format(tag))
+            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='ERROR_{0}: can\'t connect !!'.format(tag))
             return
-
-        query = text("""UPDATE spx_configuracion_parametros SET value = '0' WHERE parametro = 'COMMITED_CONF' 
+        sql = """UPDATE spx_configuracion_parametros SET value = '0' WHERE parametro = 'COMMITED_CONF' 
                     AND configuracion_id = ( SELECT id FROM spx_unidades_configuracion WHERE nombre = 'BASE' 
-                    AND dlgid_id = ( SELECT id FROM spx_unidades WHERE dlgid = '$%s'))""" % (dlgid))
-        # print(query)
+                    AND dlgid_id = ( SELECT id FROM spx_unidades WHERE dlgid = '{}'))""".format(dlgid)
         try:
-            self.conn.execute(query)
+            query = text(sql)
         except Exception as err_var:
-            log(module=__name__, function='clear_commited_conf', dlgid=dlgid, msg='ERROR: can\'t exec {0} !!'.format(tag))
-            log(module=__name__, function='clear_commited_conf', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+            log(module=__name__, server=self.server, function='clear_commited_conf', dlgid=dlgid, msg='ERROR_{0}: SQLQUERY: {1}'.format(tag, sql))
+            log(module=__name__, server=self.server, function='clear_commited_conf', dlgid=dlgid, msg='ERROR_{0}: EXCEPTION {1}'.format(tag, err_var))
+            return False
 
-        return
+        try:
+            rp = self.conn.execute(query)
+        except Exception as err_var:
+            log(module=__name__, server=self.server, function='clear_commited_conf', dlgid=dlgid,msg='ERROR_{}: exec EXCEPTION {}'.format(tag, err_var))
+            return False
+
+        return True
 
 
     def insert_data_line(self, dlgid, d, tag='GDA'):
 
         if not self.connect():
-            log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
+            log(module=__name__, server=self.server, function='insert_data_line', dlgid=dlgid, msg='ERROR_{}: can\'t connect!!'.format(tag))
             exit(0)
 
+        errors = 0
         for key in d:
-            if key == 'timestamp':
+            if key == 'timestamp' or key == 'RCVDLINE':
                 continue
             value = d[key]
-            query = text("""INSERT IGNORE INTO spx_datos (fechasys, fechadata, valor, medida_id, ubicacion_id ) VALUES \
+            log(module=__name__, server=self.server, function='insert_data_line', level='SELECT', dlgid=dlgid, msg='DEBUG_{0} {1}->{2}'.format(tag, key, value))
+            sql = """INSERT INTO spx_datos (fechasys, fechadata, valor, medida_id, ubicacion_id ) VALUES \
                          ( now(),'{0}','{1}',( SELECT uc.tipo_configuracion_id FROM spx_unidades AS u JOIN spx_unidades_configuracion \
                          AS uc ON uc.dlgid_id = u.id JOIN spx_configuracion_parametros AS cp  ON cp.configuracion_id = uc.id WHERE \
                          cp.parametro = 'NAME' AND cp.value = '{2}' AND u.dlgid = '{3}' ),( SELECT ubicacion_id FROM spx_instalacion \
-                         WHERE unidad_id = ( SELECT id FROM spx_unidades WHERE dlgid = '{3}')))""".format( d['timestamp'], value, key, dlgid ))
+                         WHERE unidad_id = ( SELECT id FROM spx_unidades WHERE dlgid = '{3}')))""".format( d['timestamp'], value, key, dlgid )
+            try:
+                query = text(sql)
+            except Exception as err_var:
+                log(module=__name__, server=self.server, function='insert_data_line', dlgid=dlgid, msg='ERROR_{0}: SQLQUERY: {1}'.format(tag, sql))
+                log(module=__name__, server=self.server, function='insert_data_line', dlgid=dlgid, msg='ERROR_{0}: EXCEPTION {1}'.format(tag, err_var))
+                errors += 1
+                continue
 
             try:
-                self.conn.execute(query)
+                rp = self.conn.execute(query)
             except Exception as err_var:
-                log(module=__name__, function='insert_data_line', dlgid=dlgid, msg='ERROR: [{0}]->[{1}]'.format(key,value))
-                log(module=__name__, function='insert_data_line', dlgid=dlgid,msg='QUERY {}'.format(query))
-                log(module=__name__, function='insert_data_line', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+                if 'Duplicate entry' in str(err_var):
+                    # Los duplicados no hacen nada malo. Se da mucho en testing.
+                    log(module=__name__, server=self.server, function='insert_data_line', dlgid=dlgid, msg='WARN_{}: Duplicated Key'.format(tag))
+                    continue
+                else:
+                    log(module=__name__, server=self.server, function='insert_data_line', dlgid=dlgid,msg='ERROR_{}: exec EXCEPTION {}'.format(tag, err_var))
+                    errors += 1
+                    continue
 
-        return
+            if errors > 0:
+                return False
+            else:
+                return True
 
 
     def insert_data_online(self, dlgid, d, tag='GDA'):
 
         if not self.connect():
-            log(module=__name__, function='insert_data_online', dlgid=dlgid, msg='ERROR: can\'t connect {0} !!'.format(tag))
+            log(module=__name__, server=self.server, function='insert_data_online', dlgid=dlgid, msg='ERROR_{}: can\'t connect !!'.format(tag))
             return
 
+        errors = 0
         for key in d:
-
-            if key == 'timestamp':
+            if key == 'timestamp' or key == 'RCVDLINE':
                 continue
-
             value = d[key]
-
-            query = text("""INSERT IGNORE INTO spx_online (fechasys, fechadata, valor, medida_id, ubicacion_id ) VALUES ( now(),'{0}','{1}', \
+            log(module=__name__, server=self.server, function='insert_data_online', level='SELECT', dlgid=dlgid,msg='DEBUG_{0} {1}->{2}'.format(tag, key, value))
+            sql = """INSERT INTO spx_online (fechasys, fechadata, valor, medida_id, ubicacion_id ) VALUES ( now(),'{0}','{1}', \
             ( SELECT uc.tipo_configuracion_id FROM spx_unidades AS u JOIN spx_unidades_configuracion AS uc ON uc.dlgid_id = u.id \
             JOIN spx_configuracion_parametros AS cp  ON cp.configuracion_id = uc.id \
             WHERE cp.parametro = 'NAME' AND cp.value = '{2}' AND u.dlgid = '{3}' ), \
-            ( SELECT ubicacion_id FROM spx_instalacion WHERE unidad_id = ( SELECT id FROM spx_unidades WHERE dlgid = '{3}')))""".format( d['timestamp'], value, key, dlgid))
+            ( SELECT ubicacion_id FROM spx_instalacion WHERE unidad_id = ( SELECT id FROM spx_unidades WHERE dlgid = '{3}')))""".format( d['timestamp'], value, key, dlgid)
+            #print(sql)
+            try:
+                query = text(sql)
+            except Exception as err_var:
+                log(module=__name__, server=self.server, function='insert_data_online', dlgid=dlgid, msg='ERROR_{0}: SQLQUERY: {1}'.format(tag, sql))
+                log(module=__name__, server=self.server, function='insert_data_online', dlgid=dlgid, msg='ERROR_{0}: EXCEPTION {1}'.format(tag, err_var))
+                errors += 1
+                continue
 
             try:
-                self.conn.execute(query)
+                rp = self.conn.execute(query)
             except Exception as err_var:
-                log(module=__name__, function='insert_data_online', dlgid=dlgid, msg='ERROR: [{0}]->[{1}]'.format(key,value))
-                log(module=__name__, function='insert_data_online', dlgid=dlgid,msg='QUERY {}'.format(query))
-                log(module=__name__, function='insert_data_online', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+                if 'Duplicate entry' in str(err_var):
+                    log(module=__name__, server=self.server, function='insert_data_online', dlgid=dlgid, msg='WARN_{}: Duplicated Key'.format(tag))
+                    errors += 1
+                else:
+                    log(module=__name__, server=self.server, function='insert_data_online', dlgid=dlgid,msg='ERROR_{}: exec EXCEPTION {}'.format(tag, err_var))
+                    errors += 1
 
-            delquery = text("""DELETE FROM spx_online  WHERE medida_id = ( SELECT uc.tipo_configuracion_id FROM spx_unidades AS u \
+            sql = """DELETE FROM spx_online  WHERE medida_id = ( SELECT uc.tipo_configuracion_id FROM spx_unidades AS u \
             JOIN spx_unidades_configuracion AS uc ON uc.dlgid_id = u.id JOIN spx_configuracion_parametros AS cp  ON cp.configuracion_id = uc.id \
             WHERE cp.parametro = 'NAME' AND cp.value = '{0}' AND u.dlgid = '{1}' ) AND ubicacion_id = \
             ( SELECT ubicacion_id FROM spx_instalacion WHERE unidad_id = ( SELECT id FROM spx_unidades WHERE dlgid = '{1}')) \
@@ -301,29 +350,37 @@ class BDGDA:
             AS u JOIN spx_unidades_configuracion AS uc ON uc.dlgid_id = u.id JOIN spx_configuracion_parametros AS cp  \
             ON cp.configuracion_id = uc.id WHERE cp.parametro = 'NAME' AND cp.value = '{0}' AND u.dlgid = '{1}' ) \
             AND ubicacion_id = ( SELECT ubicacion_id FROM spx_instalacion WHERE unidad_id = \
-            ( SELECT id FROM spx_unidades WHERE dlgid = '{1}')) ORDER BY id DESC LIMIT 1) AS temp )""".format( key, dlgid) )
-
-            # LOG.info('DEBUG: [%s]->[%s]' % (key, value))
+            ( SELECT id FROM spx_unidades WHERE dlgid = '{1}')) ORDER BY id DESC LIMIT 1) AS temp )""".format( key, dlgid)
             try:
-                self.conn.execute(delquery)
-                #LOG.info('process_: delete_data_line_online %s=%s' % (key, value))
+                query = text(sql)
             except Exception as err_var:
-                # print ('EXCEPTION: [%s]' % (error) )
-                log(module=__name__, function='insert_data_online', dlgid=dlgid, msg='ERROR: DELETE [{0}]->[{1}]'.format(key,value))
-                log(module=__name__, function='insert_data_online', dlgid=dlgid,msg='QUERY: DELETE {}'.format(query))
-                log(module=__name__, function='insert_data_online', dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+                log(module=__name__, server=self.server, function='insert_data_online', dlgid=dlgid, msg='ERROR_{0}: SQLQUERY: {1}'.format(tag, sql))
+                log(module=__name__, server=self.server, function='insert_data_online', dlgid=dlgid, msg='ERROR_{0}: EXCEPTION {1}'.format(tag, err_var))
+                errors += 1
+                continue
 
-        return
+            try:
+                rp = self.conn.execute(query)
+            except Exception as err_var:
+                log(module=__name__, server=self.server, function='insert_data_online', dlgid=dlgid, msg='ERROR_{}: exec EXCEPTION {}'.format(tag, err_var))
+                errors += 1
+                continue
+
+        if errors > 0:
+            return False
+        else:
+            return True
 
 
 class BDGDA_TAHONA(BDGDA):
 
-    def __init__(self, modo='local'):
+    def __init__(self, modo='local',server='comms'):
 
         self.datasource = ''
         self.engine = ''
         self.conn = ''
         self.connected = False
+        self.server = server
 
         if modo == 'spymovil':
             self.url = Config['BDATOS']['url_gda_tahona_spymovil']

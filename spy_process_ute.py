@@ -40,48 +40,34 @@ def format_fecha_hora(fecha, hora):
 
 def move_file_to_error_dir(file):
     # Muevo el archivo al error.
-    LOG.log(module=__name__, server='process', function='move_file_to_error_dir', dlgid='PROC00', msg='ERROR: FILE {}'.format(file))
-    dirname, filename = os.path.split(file)
+    LOG.log(module=__name__, server='process', function='move_file_to_error_dir', dlgid='UTEPROC', msg='ERROR: FILE {}'.format(file))
+    dir_name, file_name = os.path.split(file)
     try:
-        errdirname = Config['PROCESS']['process_err_path']
-        errfile = os.path.join(errdirname, filename)
-        LOG.log(module=__name__, server='process', function='move_file_to_error_dir', level='SELECT', dlgid='PROC00', console=console, msg='errfile={}'.format(errfile))
-        os.rename(file, errfile)
+        err_dir_name = Config['PROCESS']['process_err_path']
+        err_file = os.path.join(err_dir_name, file_name)
+        LOG.log(module=__name__, server='process', function='move_file_to_error_dir', level='SELECT', dlgid='UTEPROC', console=console, msg='errfile={}'.format(err_file))
+        os.rename(file, err_file)
     except Exception as err_var:
-        LOG.log(module=__name__, server='process', function='move_file_to_error_dir', console=console, dlgid='PROC00', msg='ERROR: [{0}] no puedo pasar a err [{1}]'.format(file, err_var))
-        LOG.log(module=__name__, server='process', function='move_file_to_error_dir', dlgid='PROC00', msg='ERROR: EXCEPTION {}'.format(err_var))
+        LOG.log(module=__name__, server='process', function='move_file_to_error_dir', console=console, dlgid='UTEPROC', msg='ERROR: [{0}] no puedo pasar a err [{1}]'.format(file, err_var))
+        LOG.log(module=__name__, server='process', function='move_file_to_error_dir', dlgid='UTEPROC', msg='ERROR: EXCEPTION {}'.format(err_var))
     return
 
 
 def move_file_to_bkup_dir(file):
     # Muevo el archivo al backup.
-    dirname, filename = os.path.split(file)
+    dir_name, file_name = os.path.split(file)
     try:
-        bkdirname = Config['PROCESS']['process_bk_path']
-        bkfile = os.path.join(bkdirname, filename)
-        LOG.log(module=__name__, server='process', function='move_file_to_bkup_dir', level='SELECT', dlgid='PROC00', console=console, msg='bkfile={}'.format(bkfile))
-        os.rename(file, bkfile)
+        bk_dir_name = Config['PROCESS']['process_bk_path']
+        bk_file = os.path.join(bk_dir_name, file_name)
+        LOG.log(module=__name__, server='process', function='move_file_to_bkup_dir', level='SELECT', dlgid='UTEPROC', console=console, msg='bkfile={}'.format(bk_file))
+        os.rename(file, bk_file)
     except Exception as err_var:
-        LOG.log(module=__name__, server='process', function='move_file_to_bkup_dir', console=console, dlgid='PROC00', msg='ERROR: [{0}] no puedo pasar a bk [{1}]'.format(file, err_var))
-        LOG.log(module=__name__, server='process', function='move_file_to_bkup_dir', dlgid='PROC00', msg='ERROR: EXCEPTION {}'.format(err_var))
+        LOG.log(module=__name__, server='process', function='move_file_to_bkup_dir', console=console, dlgid='UTEPROC', msg='ERROR: [{0}] no puedo pasar a bk [{1}]'.format(file, err_var))
+        LOG.log(module=__name__, server='process', function='move_file_to_bkup_dir', dlgid='UTEPROC', msg='ERROR: EXCEPTION {}'.format(err_var))
     return
 
 
-def move_file_to_ute_dir(file):
-    # Muevo el archivo al directorio 'ute' para ser procesados luego por DLGDB.
-    dirname, filename = os.path.split(file)
-    try:
-        utedirname = Config['PROCESS']['process_ute_path']
-        utefile = os.path.join(utedirname, filename)
-        LOG.log(module=__name__, server='process', function='move_file_to_ute_dir', level='SELECT', dlgid='PROC00', console=console, msg='utefile={}'.format(utefile))
-        os.rename(file, utefile)
-    except Exception as err_var:
-        LOG.log(module=__name__, server='process', function='move_file_to_ute_dir', console=console, dlgid='PROC00', msg='ERROR: [{0}] no puedo pasar a ute [{1}]'.format(file, err_var))
-        LOG.log(module=__name__, server='process', function='move_file_to_ute_dir', dlgid='PROC00', msg='ERROR: EXCEPTION {}'.format(err_var))
-    return
-
-
-def process_line( line, bd):
+def process_line( line, bd, d_conf):
     '''
     Recibo una linea, la parseo y dejo los campos en un diccionario
     Paso este diccionario a la BD para que la inserte.
@@ -89,20 +75,22 @@ def process_line( line, bd):
     LOG.log(module=__name__, server='process', function='process_line', level='SELECT', dlgid='PROC00', console=console, msg='line={}'.format(line))
     line = line.rstrip('\n|\r|\t')
     fields = re.split(',', line )
-    d = dict()
-    d['timestamp'] = format_fecha_hora(fields[0], fields[1])
-    d['RCVDLINE'] = line
+    d_data = dict()
+    d_data['timestamp'] = format_fecha_hora(fields[0], fields[1])
+    d_data['RCVDLINE'] = line
     for field in fields[2:]:
-        key, value = re.split('=', field)
-        d[key] = value
+        mag_name, value = re.split('=', field)
+        d_data[mag_name] = value
+
 
     #for key in d:
     #    LOG.log(module=__name__, server='process', function='process_line', level='SELECT', dlgid='PROC00', msg='key={0}, val={1}'.format(key,d[key]))
 
-    if not bd.insert_data_line(d):
-        return False
+    d = dict()
+    d['DATA'] = d_data
+    d['CONF'] = d_conf
 
-    if not bd.insert_data_online(d):
+    if not bd.insert_data_line(d):
         return False
 
     return True
@@ -117,28 +105,27 @@ def process_file(file):
     distinto.
     Debo entonces resetear el datasource antes de procesar c/archivo
     '''
-    dirname, filename = os.path.split(file)
-    LOG.log(module=__name__, server='process', function='process_file', level='SELECT', dlgid='PROC00', msg='file={}'.format(filename))
-    dlgid, *res = re.split('_', filename)
-    LOG.log(module=__name__, server='process', function='process_file', level='SELECT', dlgid='PROC00', msg='DLG={}'.format(dlgid))
+    dir_name, file_name = os.path.split(file)
+    LOG.log(module=__name__, server='process', function='process_file', level='SELECT', dlgid='UTEPROC', msg='file={}'.format(file_name))
+    dlgid, *res = re.split('_', file_name)
+    LOG.log(module=__name__, server='process', function='process_file', level='SELECT', dlgid='UTEPROC', msg='DLG={}'.format(dlgid))
     bd = BD(modo=Config['MODO']['modo'], dlgid=dlgid, server='process')
     if bd.datasource == 'DS_ERROR':
-        LOG.log(module=__name__, server='process', function='process_file', level='SELECT', dlgid='PROC00',msg='ERROR: DS not found !!')
+        LOG.log(module=__name__, server='process', function='process_file', level='SELECT', dlgid='UTEPROC',msg='ERROR: DS not found !!')
         move_file_to_error_dir(file)
         return
 
     print('Im a child with pid {0} and FILE {1}'.format(os.getpid(), file))
-    with open(file) as myfile:
-        line = myfile.readline()
-        if not process_line( line, bd):
+    d_conf = bd.read_dlg_conf(dlgid=dlgid)
+
+    with open(file) as my_file:
+        line = my_file.readline()
+        if not process_line( line, bd, d_conf):
             move_file_to_error_dir(file)
             return
 
     del bd
-    if Config['SITE']['site'] == 'ute':
-        move_file_to_ute_dir(file)
-    else:
-        move_file_to_bkup_dir(file)
+    move_file_to_bkup_dir(file)
     return
 
 
@@ -147,22 +134,21 @@ if __name__ == '__main__':
     # Lo primero es configurar el logger
     signal.signal(signal.SIGCHLD, signal.SIG_IGN)
     LOG.config_logger()
-    dirname = Config['PROCESS']['process_rx_path']
-    LOG.log(module=__name__, server='process', function='main', console=console, dlgid='PROC00', msg='SERVER: dirname={}'.format(dirname))
+    dir_name = Config['PROCESS']['process_ute_path']
+    LOG.log(module=__name__, server='process', function='main', console=console, dlgid='UTEPROC', msg='SERVER: dirname={}'.format(dir_name))
     pid_list = list()
-    '''
+
     while True:
-        file_list = glob.glob(dirname + '/*.dat')
-        #print ('File List: {}'.format(len(file_list)))
+        file_list = glob.glob(dir_name + '/*.dat')
         for file in file_list:
-            LOG.log(module=__name__, server='process', function='main', level='SELECT', dlgid='PROC00', console=console,  msg='File {}'.format(file))
+            LOG.log(module=__name__, server='process', function='main', level='SELECT', dlgid='UTEPROC', console=console,  msg='File {}'.format(file))
             process_file(file)
 
         time.sleep(60)
     '''
 
     while True:
-        file_list = glob.glob(dirname + '/*.dat')
+        file_list = glob.glob(dir_name + '/*.dat')
         for file in file_list:
             # Mientras halla lugar en la lista, proceso archivos
             if len(pid_list) < MAXPROCESS:
@@ -192,3 +178,4 @@ if __name__ == '__main__':
         LOG.log(module=__name__, server='process', function='main', dlgid='PROC00',msg='SERVER: No hay mas archivos: espero')
         print('Server No hay mas archivos: espero')
         time.sleep(60)
+    '''

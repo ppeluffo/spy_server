@@ -7,30 +7,36 @@ Luego, c/metodo me da los parametros que quiera
 """
 from spy_bd_bdspy import BDSPY
 from spy_bd_gda import BDGDA, BDGDA_TAHONA
+from spy_bd_dlgdb import DLGDB
 from spy_bd_ose import BDOSE_PQ, BDOSE_PZ, BDOSE_TQ
 from spy_log import log
 #------------------------------------------------------------------------------
 class BD:
     
-    def __init__ (self, dlgid, modo = 'local'):
+    def __init__ (self, dlgid, modo = 'local', server='comms'):
         self.modo = modo
         self.dlgid = dlgid
         self.bdr = ''
+        self.server = server
+        self.datasource = ''
 
         bd = BDSPY(self.modo)
         self.datasource = bd.find_data_source(self.dlgid)
         if self.datasource == 'GDA':
-            self.bdr = BDGDA(self.modo)
+            self.bdr = BDGDA(self.modo, server)
         elif self.datasource == 'GDA_TAHONA':
-            self.bdr = BDGDA_TAHONA(self.modo)
+            self.bdr = BDGDA_TAHONA(self.modo, server)
         elif self.datasource == 'BDOSE_PQ':
-            self.bdr = BDOSE_PQ(self.modo)
+            self.bdr = BDOSE_PQ(self.modo, server)
         elif self.datasource == 'BDOSE_PZ':
-            self.bdr = BDOSE_PZ(self.modo)
+            self.bdr = BDOSE_PZ(self.modo, server)
         elif self.datasource == 'BDOSE_TQ':
-            self.bdr = BDOSE_TQ(self.modo)
+            self.bdr = BDOSE_TQ(self.modo, server)
+        elif self.datasource == 'DLGDB':
+            self.bdr = DLGDB(self.modo, server)
         else:
-            log(module=__name__, function='__init__', level='INFO', dlgid=dlgid, msg='DS={} NOT implemented'.format(self.datasource))
+            self.datasource = 'DS_ERROR'
+            log(module=__name__, server=server, function='__init__', level='INFO', dlgid='PROC00', msg='ERROR: DLGID={0}:DS={1} NOT implemented'.format(dlgid, self.datasource))
 
         return
 
@@ -56,7 +62,7 @@ class BD:
         if self.datasource != '':
             return
 
-        bd = BDSPY(self.modo)
+        bd = BDSPY(self.modo, self.server )
         self.datasource = bd.find_data_source(dlgid)
         return
 
@@ -97,10 +103,8 @@ class BD:
 
 
     def insert_data_line(self,d):
-        self.bdr.insert_data_line(self.dlgid, d)
-        return
+        return self.bdr.insert_data_line(self.dlgid, d )
 
 
     def insert_data_online(self,d):
-        self.bdr.insert_data_online(self.dlgid, d)
-        return
+        return self.bdr.insert_data_online(self.dlgid, d)

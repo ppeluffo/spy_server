@@ -34,7 +34,7 @@ def config_logger():
 
 # ------------------------------------------------------------------------------
 
-def log(module,function, msg='', dlgid='00000', console=False, level='INFO'):
+def log(module, function, server = 'comms', msg='', dlgid='00000', console=False, level='INFO'):
     '''
     Se encarga de mandar la logfile el mensaje.
     Si el level es SELECT, dependiendo del dlgid se muestra o no
@@ -45,16 +45,16 @@ def log(module,function, msg='', dlgid='00000', console=False, level='INFO'):
 
     if level == 'SELECT':
         if dlgid in list_dlg:
-            logging.info('[{0}][{1}][{2}]: [{3}]'.format( dlgid, module, function, msg))
+            logging.info('[{0}][{1}][{2}][{3}]: [{4}]'.format( server,dlgid, module,function, msg))
             if console == True:
-                print('Process [{0}][{1}][{2}][{3}]'.format(module,function,dlgid,msg))
+                print('Process [{0}][{1}][{2}][{3}]'.format( module,function,dlgid,msg))
             return
         else:
             return
 
-    logging.info('[{0}][{1}][{2}]: [{3}]'.format( dlgid, module, function,msg))
+    logging.info('[{0}][{1}][{2}][{3}]: [{4}]'.format( server, dlgid, module,function,msg))
     if console:
-        print('Process [{0}][{1}][{2}][{3}]'.format(module, function, dlgid, msg))
+        print('Process [{0}][{1}][{2}][{3}]'.format( module, function, dlgid, msg))
 
     return
 

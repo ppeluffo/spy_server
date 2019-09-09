@@ -38,7 +38,7 @@ class DATA_frame:
         # y los control en otra
         self.control_codes = form.getlist('CTL')
         self.response = 'RX_OK:'
-        log(module=__name__, function='__init__', dlgid=self.dlgid, msg='start')
+        log(module=__name__, function='__init__', level='SELECT', dlgid=self.dlgid, msg='start')
         return
 
 
@@ -58,7 +58,7 @@ class DATA_frame:
         log(module=__name__, function='process_commited_conf', dlgid=self.dlgid, level='SELECT', msg='start')
         bd = BD( modo = Config['MODO']['modo'], dlgid=self.dlgid )
         commited_conf = bd.process_commited_conf()
-        if ( (commited_conf == 1) and ( 'RESET' not in self.response) ):
+        if (commited_conf == 1) and ('RESET' not in self.response):
             self.response += 'RESET:'
             bd.clear_commited_conf()
 
@@ -102,7 +102,31 @@ class DATA_frame:
         self.response += redis_db.get_cmd_reset()
 
         self.process_commited_conf()
-
-        # Envio la respuesta
         self.send_response()
+        self.process_callbacks()
+
         return
+
+
+    def process_callbacks(self):
+        #log(module=__name__, function='process_callbacks', dlgid=self.dlgid, level='SELECT',msg='CALLBACK start')
+        # Aqui debo invocar al perl con el parametro self.dlgid
+
+        # Leo los callbacks.
+        dict_cb = dict()
+        for key, callback_file in Config['CALLBACKS'].items():
+            cb_dlgid = key.upper()
+            #log(module=__name__, function='process_callbacks', dlgid=self.dlgid, level='SELECT', msg='CBK: dlgid {0}:script {1}'.format(cb_dlgid, callback_file))
+            dict_cb[cb_dlgid] = callback_file
+
+        if self.dlgid in dict_cb:
+            log(module=__name__, function='process_callbacks', dlgid=self.dlgid, level='SELECT', msg='CALLBACK start')
+            newpid = os.fork()
+            if newpid == 0:
+                # Child
+                PATH = Config['CALLBACKS_PATH']['cbk_path']
+                PROGRAM = dict_cb[self.dlgid]
+                CBK = os.path.join(PATH,PROGRAM)
+                os.execl(CBK, PROGRAM, self.dlgid)
+
+        exit(0)

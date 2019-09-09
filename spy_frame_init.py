@@ -25,6 +25,7 @@ import cgi
 from datetime import datetime
 
 from spy_bd_general import BD
+from spy_bd_bdspy import BDSPY
 from spy_bd_redis import Redis
 from spy_set_base import Confbase
 from spy_set_analog import Confanalog
@@ -48,6 +49,7 @@ class INIT_frame:
         self.response = now.strftime('INIT_OK:CLOCK=%y%m%d%H%M:')
         form = cgi.FieldStorage()
         self.dlgid = form.getfirst('DLGID', 'DLG_ERR')
+        self.uid = form.getfirst('UID', 'UID_ERR')
         log(module=__name__, function='__init__', dlgid=self.dlgid, msg='start')
         return
  
@@ -61,7 +63,14 @@ class INIT_frame:
          
     def process(self):
         log(module=__name__, function='process', dlgid=self.dlgid, level='SELECT', msg='start' )
-        # Leo toda la configuracion desde la BD en un dict.
+        # Veo si esta autorizado y actualizo el uid
+        bd = BDSPY(Config['MODO']['modo'])
+        if not bd.check_auth(self.dlgid, self.uid):
+            self.response = 'NOT_ALLOWED'
+            self.send_response()
+            return
+
+        # Leo toda la configuracion desde la BD en un dict
         bd = BD( modo = Config['MODO']['modo'], dlgid = self.dlgid )
         dcnf = bd.read_dlg_conf()
         if dcnf == {}:

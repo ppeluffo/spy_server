@@ -35,15 +35,15 @@ class Confdoutput:
         Si el modo es CONS, entonces viene otra parametro que es CONS
         '''
         form = cgi.FieldStorage()
-        self.douts = form.getfirst('DOUTPUTS','OFF')
+        self.douts = form.getfirst('DOUT','OFF')
         if self.douts == 'CONS':
             try:
-                self.consigna_dia_hhmm, self.consigna_noche_hhmm = re.split('=|,', form.getvalue('CONS'))
+                self.consigna_dia_hhmm, self.consigna_noche_hhmm = re.split('=|,', form.getvalue('CSGNA'))
                 self.consigna_dia_hhmm = int( self.consigna_dia_hhmm)
                 self.consigna_noche_hhmm = int( self.consigna_noche_hhmm)
             except Exception as err_var:
                 log(module=__name__, function='init_from_qs', dlgid=self.dlgid, msg='ERROR: douts_unpack {}'.format(form.getvalue('DOUTS')))
-                log(module=__name__, function='init_from_qs',dlgid=self.dlgid, msg='EXCEPTION {}'.format(err_var))
+                log(module=__name__, function='init_from_qs',dlgid=self.dlgid, msg='ERROR: EXCEPTION {}'.format(err_var))
         return
 
 
@@ -66,19 +66,21 @@ class Confdoutput:
             self.consigna_noche_hhmm = int(dcnf.get(('CONS','HHMM2'),0))
         return
 
+
+    def __eq__(self, other):
         '''
         Overload de la comparacion donde solo comparo los elementos necesarios
         '''
-        if ( self.douts == other.douts == 'CONS'):
-            if ( self.consigna_dia_hhmm == other.consigna_dia_hhmm and
-                self.consigna_noche_hhmm == other.consigna_noche_hhmm ):
-                return True
+        if (self.douts == other.douts == 'CONS'):
+            if (self.consigna_dia_hhmm == other.consigna_dia_hhmm and
+                    self.consigna_noche_hhmm == other.consigna_noche_hhmm):
+                    return True
             else:
                 return False
-        
+
         elif self.douts == other.douts:
             return True
-        
+
         else:
             return False
 

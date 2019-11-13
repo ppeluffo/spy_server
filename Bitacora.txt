@@ -1,7 +1,0 @@
-PENDIENTES:
-
-2-Testing con BD_OSE / BD_TAHONA . Ojo el datasource.
-3-BDUTE
-
-
-

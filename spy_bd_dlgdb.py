@@ -136,7 +136,10 @@ class DLGDB:
             sql_dinama += 'mag{},disp{} '.format(col)
 
         # Valores
-        sql += ') VALUES ( {0},{1},now() '.format(dlgid, d_data['timestamp'])
+        sql_main += ') VALUES ( {0},{1},now() '.format(dlgid, d_data['timestamp'])
+        sql_online += ') VALUES ( {0},{1},now() '.format(dlgid, d_data['timestamp'])
+        sql_dinama += ') VALUES ( {0},{1},now() '.format(dlgid, d_data['timestamp'])
+
         for ( mag_name,val,col,disp ) in data:
             sql_main += '{},{} '.format(val,disp)
             sql_online += '{},{} '.format(val, disp)
@@ -165,7 +168,7 @@ class DLGDB:
             if 'Duplicate entry' in str(err_var):
                 # Los duplicados no hacen nada malo. Se da mucho en testing.
                 log(module=__name__, server=self.server, function='insert_data_line', dlgid=dlgid, msg='WARN_{}: Duplicated Key'.format(tag))
-             else:
+            else:
                 log(module=__name__, server=self.server, function='insert_data_line', dlgid=dlgid,msg='ERROR_{}: exec EXCEPTION {}'.format(tag, err_var))
 
         # online
@@ -181,7 +184,7 @@ class DLGDB:
             if 'Duplicate entry' in str(err_var):
                 # Los duplicados no hacen nada malo. Se da mucho en testing.
                 log(module=__name__, server=self.server, function='insert_data_line', dlgid=dlgid, msg='WARN_{}: Duplicated Key'.format(tag))
-             else:
+            else:
                 log(module=__name__, server=self.server, function='insert_data_line', dlgid=dlgid,msg='ERROR_{}: exec EXCEPTION {}'.format(tag, err_var))
 
         # dinama
@@ -197,7 +200,7 @@ class DLGDB:
             if 'Duplicate entry' in str(err_var):
                 # Los duplicados no hacen nada malo. Se da mucho en testing.
                 log(module=__name__, server=self.server, function='insert_data_line', dlgid=dlgid, msg='WARN_{}: Duplicated Key'.format(tag))
-             else:
+            else:
                 log(module=__name__, server=self.server, function='insert_data_line', dlgid=dlgid,msg='ERROR_{}: exec EXCEPTION {}'.format(tag, err_var))
 
         if errors > 0:

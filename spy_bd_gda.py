@@ -182,10 +182,18 @@ class BDGDA:
                      ( SELECT id FROM spx_unidades WHERE dlgid = '{0}'), '{1}', '{2}')""" .format(dlgid, d['CSQ'], d['RCVDLINE'])
         try:
             query = text(sql)
+            #log(module=__name__, server=self.server, function='DEBUG update', dlgid=dlgid, level='SELECT', msg='query[{}]'.format(query))
         except Exception as err_var:
             log(module=__name__, server=self.server, function='update', dlgid=dlgid, msg='ERROR_{0}: SQLQUERY: {1}'.format(tag, sql))
             log(module=__name__, server=self.server, function='update', dlgid=dlgid, msg='ERROR_{0}: EXCEPTION {1}'.format(tag, err_var))
             return False
+
+        try:
+            rp = self.conn.execute(query)
+        except Exception as err_var:
+            log(module=__name__, server=self.server, function='update', dlgid=dlgid,msg='ERROR_{}: exec EXCEPTION {}'.format(tag, err_var))
+            return False
+
 
         # PASS2: Actualizo los parametros dinamicos
         for key in d:
@@ -198,6 +206,13 @@ class BDGDA:
             except Exception as err_var:
                 log(module=__name__, server=self.server, function='update', dlgid=dlgid,msg='ERROR_{0}: SQLQUERY: {1}'.format(tag, sql))
                 log(module=__name__, server=self.server, function='update', dlgid=dlgid,msg='ERROR_{0}: EXCEPTION {1}'.format(tag, err_var))
+                return False
+
+            try:
+                rp = self.conn.execute(query)
+            except Exception as err_var:
+                log(module=__name__, server=self.server, function='update', dlgid=dlgid,
+                    msg='ERROR_{}: exec EXCEPTION {}'.format(tag, err_var))
                 return False
 
             log(module=__name__, server=self.server, function='update', dlgid=dlgid, level='SELECT', msg='{0}: {1}={2}'.format(tag, key,value))
@@ -280,6 +295,8 @@ class BDGDA:
                          AS uc ON uc.dlgid_id = u.id JOIN spx_configuracion_parametros AS cp  ON cp.configuracion_id = uc.id WHERE \
                          cp.parametro = 'NAME' AND cp.value = '{2}' AND u.dlgid = '{3}' ),( SELECT ubicacion_id FROM spx_instalacion \
                          WHERE unidad_id = ( SELECT id FROM spx_unidades WHERE dlgid = '{3}')))""".format( d['timestamp'], value, key, dlgid )
+            #print('DEBUG:  {}'.format(sql))
+            #continue
             try:
                 query = text(sql)
             except Exception as err_var:
@@ -300,10 +317,11 @@ class BDGDA:
                     errors += 1
                     continue
 
-            if errors > 0:
-                return False
-            else:
-                return True
+        #print('DEBUG ERRORS={}'.format(errors))
+        if errors > 0:
+            return False
+        else:
+            return True
 
 
     def insert_data_online(self, dlgid, d, tag='GDA'):

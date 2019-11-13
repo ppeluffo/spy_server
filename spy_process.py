@@ -129,10 +129,10 @@ def process_file(file):
 
     print('Im a child with pid {0} and FILE {1}'.format(os.getpid(), file))
     with open(file) as myfile:
-        line = myfile.readline()
-        if not process_line( line, bd):
-            move_file_to_error_dir(file)
-            return
+        for line in myfile: 
+            if not process_line( line, bd):
+                move_file_to_error_dir(file)
+                return
 
     del bd
     if Config['SITE']['site'] == 'ute':
@@ -144,23 +144,27 @@ def process_file(file):
 
 if __name__ == '__main__':
 
-    # Lo primero es configurar el logger
+    # Lo primero es configurar el logger y desconocer las señales SIGCHILD
+    # de los child que cree para poder despegarme como demonio
     signal.signal(signal.SIGCHLD, signal.SIG_IGN)
     LOG.config_logger()
     dirname = Config['PROCESS']['process_rx_path']
     LOG.log(module=__name__, server='process', function='main', console=console, dlgid='PROC00', msg='SERVER: dirname={}'.format(dirname))
     pid_list = list()
-    '''
-    while True:
-        file_list = glob.glob(dirname + '/*.dat')
-        #print ('File List: {}'.format(len(file_list)))
-        for file in file_list:
-            LOG.log(module=__name__, server='process', function='main', level='SELECT', dlgid='PROC00', console=console,  msg='File {}'.format(file))
-            process_file(file)
+    #
+    # A efectos de testing en modo consola corro como ./spy_process.py DEBUG
+    if len(sys.argv) > 1 and sys.argv[1] == 'DEBUG':
+        print('spy_process en modo DEBUG !!!')
+        while True:
+            file_list = glob.glob(dirname + '/*.dat')
+            print ('File List: {}'.format(len(file_list)))
+            for file in file_list:
+                LOG.log(module=__name__, server='process', function='main', level='SELECT', dlgid='PROC00', console=console,  msg='File {}'.format(file))
+                process_file(file)
 
-        time.sleep(60)
-    '''
+            time.sleep(60)
 
+    # Modo normal
     while True:
         file_list = glob.glob(dirname + '/*.dat')
         for file in file_list:
